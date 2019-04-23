@@ -41,7 +41,19 @@ def get_my_hash_rate():
     #assume using the antminer (Giga hashes)
     my_hash_rate = 14000
     return(my_hash_rate)
-    
+
+def get_Mhash_joule():
+    #make this dynamic
+    return(10182)
+
+def get_usd_joule():
+#assume in massachusetts
+    return(0.148/(3.6 * 10**6))
+
+def get_Mhash_second():
+#make this dynamic
+    return(14000000)
+ 
 def get_share_mining():
     hashrate = get_hashrate()
     my_hash_rate = get_my_hash_rate()
@@ -49,7 +61,12 @@ def get_share_mining():
     return(share_mining)
 
 def calculate_costs():
-    
+    usd_joule = get_usd_joule()
+    Mhash_joule = get_Mhash_joule()
+    Mhash_second = get_Mhash_second()
+    seconds = 60 * 10
+    e_costs = usd_joule / Mhash_joule *Mhash_second  * seconds
+    return(e_costs)
 
 def calculate_profit():
     block_reward = get_block_reward()
@@ -68,4 +85,3 @@ def calculate_ev():
 #input
 #what state you live in (for electricity costs)
 #what hardware you use (electricity costs and hash power)
-    
