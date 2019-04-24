@@ -12,16 +12,19 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from __future__ import division
-
+import requests
 
 
 def get_price_btc():
-    #make this dynamic
-    price = 5232.84
+    #price = 5232.84
+    bitcoin_api_url = 'https://api.coinmarketcap.com/v1/ticker/bitcoin/'
+    response = requests.get(bitcoin_api_url)
+    response_json = response.json()
+    price = float(response_json[0]['price_usd'])
     return(price)
     
 def get_block_reward():
-    #make this dynamic
+    #maybe ke this dynamic
     block_reward = 12.5 
     return(block_reward)
     
