@@ -22,15 +22,15 @@ def get_price_btc():
     response_json = response.json()
     price = float(response_json[0]['price_usd'])
     return(price)
-    
+
 def get_block_reward():
     #maybe ke this dynamic
-    block_reward = 12.5 
+    block_reward = 12.5
     return(block_reward)
-    
+
 def get_fees():
     #make this dynamic
-    fees = 0 
+    fees = 0
     return(fees)
 
 def get_hashrate():
@@ -38,7 +38,7 @@ def get_hashrate():
     #in Giga Hashes
     hashrate = 45867201622
     return(hashrate)
-    
+
 def get_my_hash_rate():
     #make this dynamic
     #assume using the antminer (Giga hashes)
@@ -51,12 +51,13 @@ def get_Mhash_joule():
 
 def get_usd_joule():
 #assume in massachusetts
+    # price per kwh
     return(0.148/(3.6 * 10**6))
 
 def get_Mhash_second():
 #make this dynamic
     return(14000000)
- 
+
 def get_share_mining():
     hashrate = get_hashrate()
     my_hash_rate = get_my_hash_rate()
@@ -84,6 +85,9 @@ def calculate_ev():
     profit = calculate_profit()
     ev = profit - costs
     return(ev)
+
+def get_block_times():
+    return None
 
 #input
 #what state you live in (for electricity costs)
