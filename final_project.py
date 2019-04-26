@@ -33,12 +33,31 @@ def get_fees():
     fees = 0
     return(fees)
 
-def get_hashrate():
-    #make this dynamic
-    #in Giga Hashes
-    hashrate = 45867201622
-    return(hashrate)
+#def get_hashrate():
+#    #make this dynamic
+#    #in Giga Hashes
+#    hashrate = 45867201622
+#    return(hashrate)
+    
+def get_difficulty():
+    # get the last published difficulty from when the difficulty was changed
+    difficulty = 
+    return(difficulty)
 
+def get_blocks_yesterday():
+    #get the number of blocks found yesterday
+    blocks_found = 
+    return(blocks_found)
+
+def get_updated_hashrate():
+    expected_blocks = 144
+    difficulty = get_difficulty()
+    blocks_found = get_blocks_yesterday()
+    #figure out why this is true
+    #in giga hashes
+    updated_hashrate = (blocks_found/ expected_blocks * difficulty * 2**32 / 600 ) * 10**3
+    return(updated_hashrate)
+    
 def get_my_hash_rate():
     #make this dynamic
     #assume using the antminer (Giga hashes)
@@ -59,7 +78,7 @@ def get_Mhash_second():
     return(14000000)
 
 def get_share_mining():
-    hashrate = get_hashrate()
+    hashrate = get_updated_hashrate()
     my_hash_rate = get_my_hash_rate()
     share_mining = my_hash_rate/ (my_hash_rate + hashrate)
     return(share_mining)
