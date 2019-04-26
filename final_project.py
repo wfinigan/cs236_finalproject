@@ -40,20 +40,19 @@ def get_fees():
 #    return(hashrate)
     
 def get_difficulty():
-    # get the last published difficulty from when the difficulty was changed
-    difficulty = 
+    # get the last published difficulty from when the difficulty was changed TO DO
+    difficulty = 6379265451411
     return(difficulty)
 
 def get_blocks_yesterday():
-    #get the number of blocks found yesterday
-    blocks_found = 
+    #get the number of blocks found yesterday TO DO
+    blocks_found = 144
     return(blocks_found)
 
 def get_updated_hashrate():
     expected_blocks = 144
     difficulty = get_difficulty()
     blocks_found = get_blocks_yesterday()
-    #figure out why this is true
     #in giga hashes
     updated_hashrate = (blocks_found/ expected_blocks * difficulty * 2**32 / 600 ) / 10**9
     return(updated_hashrate)
