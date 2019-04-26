@@ -1,27 +1,45 @@
-# -*- coding: utf-8 -*-
-"""
-Spyder Editor
-
-This is a temporary script file.
-"""
-
-
 import numpy as np
 import math
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from __future__ import division
+from requests import Session
 import requests
 
+from secret import cmc_key, eia_key
+
+# coin market cap setup
+headers = {
+    'Accepts': 'application/json',
+    'X-CMC_PRO_API_KEY': cmc_key,
+}
+
+session = Session()
+session.headers.update(headers)
+
+
+def get_prices(coin_ids=['1']):
+    """Returns a list of coin get_prices.
+
+    NOTE: Not using this for now -- could be useful when we want to do multiple coins.
+    """
+    bitcoin_api_url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
+    params = {
+        'id': ','.join(coin_ids)
+    }
+
+    response = session.get(bitcoin_api_url, params=params)
+    response_json = response.json()
+
+    prices = []
+    for coin_id in coin_ids:
+        prices.append(float(response_json['data'][coin_id]['quote']['USD']['price']))
+
+    return(prices)
 
 def get_price_btc():
-    #price = 5232.84
-    bitcoin_api_url = 'https://api.coinmarketcap.com/v1/ticker/bitcoin/'
-    response = requests.get(bitcoin_api_url)
-    response_json = response.json()
-    price = float(response_json[0]['price_usd'])
-    return(price)
+    return(get_prices(coin_ids=['1'])[0])
 
 def get_block_reward():
     #maybe ke this dynamic
@@ -50,9 +68,43 @@ def get_Mhash_joule():
     return(10182)
 
 def get_usd_joule():
-#assume in massachusetts
-    # price per kwh
-    return(0.148/(3.6 * 10**6))
+    """Return dictionary mapping State IDs to dollars per joule average price in previous month.
+    """
+    url = 'http://api.eia.gov/category/'
+    params = {
+        'api_key': eia_key,
+        'category_id': '40'
+    }
+    response = requests.get(url, params=params)
+    response_json = response.json()
+
+    series_ids = []
+    for child in response_json['category']['childseries']:
+        tokens = child['series_id'].split('.')
+
+        if tokens[-1] == 'M':
+            state = tokens[-2].split('-')[0]
+            if len(state) == 2 and state != "US":
+                series_ids.append(child['series_id'])
+
+    states = {}
+    for series_id in series_ids:
+        url = 'http://api.eia.gov/series/'
+        params = {
+            'api_key': eia_key,
+            'series_id': series_id,
+        }
+        response = requests.get(url, params=params)
+        response_json = response.json()
+
+        # get state name
+        state = response_json['series'][0]['geography'].split('-')[1]
+
+        # convert to dollars per joule
+        cost = response_json['series'][0]['data'][0][1] / (100 * (3.6 * 10**6))
+        states[state] = cost
+
+    return states
 
 def get_Mhash_second():
 #make this dynamic
@@ -64,8 +116,9 @@ def get_share_mining():
     share_mining = my_hash_rate/ (my_hash_rate + hashrate)
     return(share_mining)
 
-def calculate_costs():
-    usd_joule = get_usd_joule()
+def calculate_costs(state='MA'):
+    usd_joule = get_usd_joule()[state]
+
     Mhash_joule = get_Mhash_joule()
     Mhash_second = get_Mhash_second()
     seconds = 60 * 10
