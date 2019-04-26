@@ -1,9 +1,9 @@
+from __future__ import division
 import numpy as np
 import math
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
-from __future__ import division
 from requests import Session
 import requests
 
