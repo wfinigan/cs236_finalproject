@@ -18,7 +18,6 @@ headers = {
 session = Session()
 session.headers.update(headers)
 
-
 def get_prices(coin_ids=['1']):
     """Returns a list of coin get_prices.
 
@@ -56,7 +55,7 @@ def get_fees():
 #    #in Giga Hashes
 #    hashrate = 45867201622
 #    return(hashrate)
-    
+
 def get_difficulty():
     # get the last published difficulty from when the difficulty was changed TO DO
     difficulty = 6379265451411
@@ -71,14 +70,14 @@ def get_updated_hashrate():
     expected_blocks = 144
     difficulty = get_difficulty()
     blocks_found = get_blocks_yesterday()
-    #in giga hashes
-    updated_hashrate = (blocks_found/ expected_blocks * difficulty * 2**32 / 600 ) / 10**9
+    #in tera hashes
+    updated_hashrate = (blocks_found/ expected_blocks * difficulty * 2**32 / 600 ) / 10**12
     return(updated_hashrate)
-    
+
 def get_my_hash_rate():
     #make this dynamic
-    #assume using the antminer (Giga hashes)
-    my_hash_rate = 14000
+    #assume using the antminer (tera hashes)
+    my_hash_rate = 14
     return(my_hash_rate)
 
 def get_Mhash_joule():
@@ -124,10 +123,6 @@ def get_usd_joule():
 
     return states
 
-def get_Mhash_second():
-#make this dynamic
-    return(14000000)
-
 def get_share_mining():
     hashrate = get_updated_hashrate()
     my_hash_rate = get_my_hash_rate()
@@ -138,7 +133,7 @@ def calculate_costs(state='MA'):
     usd_joule = get_usd_joule()[state]
 
     Mhash_joule = get_Mhash_joule()
-    Mhash_second = get_Mhash_second()
+    Mhash_second = get_my_hash_rate() * 10**6
     seconds = 60 * 10
     e_costs = usd_joule / Mhash_joule *Mhash_second  * seconds
     return(e_costs)
@@ -156,9 +151,6 @@ def calculate_ev():
     profit = calculate_profit()
     ev = profit - costs
     return(ev)
-
-def get_block_times():
-    return None
 
 #input
 #what state you live in (for electricity costs)
