@@ -55,7 +55,7 @@ def get_updated_hashrate():
     blocks_found = get_blocks_yesterday()
     #figure out why this is true
     #in giga hashes
-    updated_hashrate = (blocks_found/ expected_blocks * difficulty * 2**32 / 600 ) * 10**3
+    updated_hashrate = (blocks_found/ expected_blocks * difficulty * 2**32 / 600 ) / 10**9
     return(updated_hashrate)
     
 def get_my_hash_rate():
