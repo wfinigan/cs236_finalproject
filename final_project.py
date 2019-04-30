@@ -100,10 +100,13 @@ def get_avg_pct_change(currency):
     return(np.average(np.asarray(mylist)))
     
 def get_difficulty():
-    # get the last published difficulty from when the difficulty was changed TO DO
-    difficulty = 6379265451411
-    return(difficulty)
+    url = 'https://api.smartbit.com.au/v1/blockchain/stats'
+    response = requests.get(url)
+    response_json = response.json()
 
+    return response_json['stats']['end_difficulty']
+with open('test.txt', 'w') as f:
+    f.write(get_difficulty())
 def get_blocks_yesterday():
     url = 'https://api.smartbit.com.au/v1/blockchain/stats'
     response = requests.get(url)
