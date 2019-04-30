@@ -46,17 +46,21 @@ def get_block_reward():
     block_reward = 12.5
     return(block_reward)
 
-def get_fees():
-    #make this dynamic
-    fees = 0
-    return(fees)
-    
+def get_fees(days=1):
+    url = 'https://api.smartbit.com.au/v1/blockchain/stats'
+    response = requests.get(url, params={'days': days})
+    response_json = response.json()
+
+    fees = float(response_json['stats']['fees']) / int(response_json['stats']['block_count'])
+
+    return fees
+
 def get_largest_pct_loss(currency):
     #make currency 'BTC', 'ETH'
     df = pd.read_csv( currency+ '-USD.csv')
     df = df[df.shape[0]-365:].copy()
     df = df.reset_index()
-    max_curr = 0 
+    max_curr = 0
     old = df.loc[0]['Adj Close'].copy()
     for z in range(1,df.shape[0]):
         temp = df.loc[z]['Adj Close'].copy()
@@ -65,15 +69,6 @@ def get_largest_pct_loss(currency):
             max_curr = change
         old = temp
     return(max_curr)
-    
-def get_avg_pct_change:
-    
-
-#def get_hashrate():
-#    #make this dynamic
-#    #in Giga Hashes
-#    hashrate = 45867201622
-#    return(hashrate)
 
 def get_difficulty():
     # get the last published difficulty from when the difficulty was changed TO DO
@@ -81,16 +76,18 @@ def get_difficulty():
     return(difficulty)
 
 def get_blocks_yesterday():
-    #get the number of blocks found yesterday TO DO
-    blocks_found = 144
-    return(blocks_found)
+    url = 'https://api.smartbit.com.au/v1/blockchain/stats'
+    response = requests.get(url)
+    response_json = response.json()
+
+    return response_json['stats']['block_count']
 
 def get_updated_hashrate():
     expected_blocks = 144
     difficulty = get_difficulty()
     blocks_found = get_blocks_yesterday()
     #in tera hashes
-    updated_hashrate = (blocks_found/ expected_blocks * difficulty * 2**32 / 600 ) / 10**12
+    updated_hashrate = (blocks_found / expected_blocks * difficulty * 2**32 / 600 ) / 10**12
     return(updated_hashrate)
 
 def get_my_hash_rate():
@@ -170,7 +167,3 @@ def calculate_ev():
     profit = calculate_profit()
     ev = profit - costs
     return(ev)
-
-#input
-#what state you live in (for electricity costs)
-#what hardware you use (electricity costs and hash power)
