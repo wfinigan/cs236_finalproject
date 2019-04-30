@@ -69,13 +69,13 @@ def get_largest_pct_loss(currency):
             max_curr = change
         old = temp
     return(max_curr)
-    
+
 def get_largest_pct_gain(currency):
     #make currency 'BTC', 'ETH'
     df = pd.read_csv( currency+ '-USD.csv')
     df = df[df.shape[0]-365:].copy()
     df = df.reset_index()
-    max_curr = 0 
+    max_curr = 0
     old = df.loc[0]['Adj Close'].copy()
     for z in range(1,df.shape[0]):
         temp = df.loc[z]['Adj Close'].copy()
@@ -84,13 +84,13 @@ def get_largest_pct_gain(currency):
             max_curr = change
         old = temp
     return(max_curr)
-    
+
 def get_avg_pct_change(currency):
         #make currency 'BTC', 'ETH'
     df = pd.read_csv( currency+ '-USD.csv')
     df = df[df.shape[0]-365:].copy()
     df = df.reset_index()
-    mylist = list() 
+    mylist = list()
     old = df.loc[0]['Adj Close'].copy()
     for z in range(1,df.shape[0]):
         temp = df.loc[z]['Adj Close'].copy()
@@ -98,15 +98,14 @@ def get_avg_pct_change(currency):
         mylist.append(abs(change))
         old = temp
     return(np.average(np.asarray(mylist)))
-    
+
 def get_difficulty():
     url = 'https://api.smartbit.com.au/v1/blockchain/stats'
     response = requests.get(url)
     response_json = response.json()
 
     return response_json['stats']['end_difficulty']
-with open('test.txt', 'w') as f:
-    f.write(get_difficulty())
+
 def get_blocks_yesterday():
     url = 'https://api.smartbit.com.au/v1/blockchain/stats'
     response = requests.get(url)
