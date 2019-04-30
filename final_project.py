@@ -104,7 +104,7 @@ def get_difficulty():
     response = requests.get(url)
     response_json = response.json()
 
-    return response_json['stats']['end_difficulty']
+    return float(response_json['stats']['end_difficulty'])
 
 def get_blocks_yesterday():
     url = 'https://api.smartbit.com.au/v1/blockchain/stats'
@@ -202,9 +202,11 @@ def calculate_profit(case, currency):
     USD = price * (block_reward + fees) * share_mining
     return(USD)
 
-def calculate_ev(case,currency):
+def calculate_ev(case,currency, state='MA'):
     #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
-    costs = calculate_costs()
-    profit = calculate_profit()
+    costs = calculate_costs(state=state)
+    profit = calculate_profit(case,currency)
     ev = profit - costs
     return(ev)
+
+calculate_ev('w', 'BTC', state='OK')
