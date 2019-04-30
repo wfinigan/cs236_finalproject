@@ -66,15 +66,35 @@ def get_largest_pct_loss(currency):
         old = temp
     return(max_curr)
     
-def get_avg_pct_change:
+def get_largest_pct_gain(currency):
+    #make currency 'BTC', 'ETH'
+    df = pd.read_csv( currency+ '-USD.csv')
+    df = df[df.shape[0]-365:].copy()
+    df = df.reset_index()
+    max_curr = 0 
+    old = df.loc[0]['Adj Close'].copy()
+    for z in range(1,df.shape[0]):
+        temp = df.loc[z]['Adj Close'].copy()
+        change = (temp - old )/old
+        if change > max_curr:
+            max_curr = change
+        old = temp
+    return(max_curr)
     
-
-#def get_hashrate():
-#    #make this dynamic
-#    #in Giga Hashes
-#    hashrate = 45867201622
-#    return(hashrate)
-
+def get_avg_pct_change(currency):
+        #make currency 'BTC', 'ETH'
+    df = pd.read_csv( currency+ '-USD.csv')
+    df = df[df.shape[0]-365:].copy()
+    df = df.reset_index()
+    mylist = list() 
+    old = df.loc[0]['Adj Close'].copy()
+    for z in range(1,df.shape[0]):
+        temp = df.loc[z]['Adj Close'].copy()
+        change = (temp - old )/old
+        mylist.append(abs(change))
+        old = temp
+    return(np.average(np.asarray(mylist)))
+    
 def get_difficulty():
     # get the last published difficulty from when the difficulty was changed TO DO
     difficulty = 6379265451411
@@ -157,15 +177,25 @@ def calculate_costs(state='MA'):
     e_costs = usd_joule / Mhash_joule *Mhash_second  * seconds
     return(e_costs)
 
-def calculate_profit():
+def calculate_profit(case, currency):
     block_reward = get_block_reward()
-    price = get_price_btc()
+    if case == 'w':
+        price = get_price_btc() * (1 + get_largest_pct_loss(currency))
+    if case == 'b':
+        price = get_price_btc() * (1 + get_largest_pct_gain(currency))
+    if case == 'ag':
+        price = get_price_btc() *  (1 + get_avg_pct_change(currency))
+    if case == 'ab':
+        price = get_price_btc()*  (1 - get_avg_pct_change(currency))
+    if case == 'na':
+        price = get_price_btc()
     fees = get_fees()
     share_mining = get_share_mining()
     USD = price * (block_reward + fees) * share_mining
     return(USD)
 
-def calculate_ev():
+def calculate_ev(case,currency):
+    #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
     costs = calculate_costs()
     profit = calculate_profit()
     ev = profit - costs
