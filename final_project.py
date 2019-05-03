@@ -189,7 +189,7 @@ def get_my_hash_rate(currency):
 
     if currency == 'ETH':
         # 33 MH convert to TH
-        my_hash_rate = 0.033
+        my_hash_rate = 33 * 10 **-6
 
     return my_hash_rate
 
@@ -296,5 +296,5 @@ def calculate_ev(case, currency, state='MA'):
 # store as global
 ethereum_data = get_ethereum_data()
 
-calculate_ev('na', 'ETH', state='OK')
+calculate_ev('na', 'ETH', state='MA')
 calculate_ev('na', 'BTC', state='MA')
