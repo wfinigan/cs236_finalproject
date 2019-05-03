@@ -10,6 +10,8 @@ import requests
 
 from secret import cmc_key, eia_key
 
+
+
 # coin market cap setup
 headers = {
     'Accepts': 'application/json',
@@ -119,15 +121,22 @@ def get_updated_hashrate():
     updated_hashrate = (blocks_found / expected_blocks * difficulty * 2**32 / 600 ) / 10**12
     return(updated_hashrate)
 
-def get_my_hash_rate():
-    #make this dynamic
-    #assume using the antminer (tera hashes)
-    my_hash_rate = 14
-    return(my_hash_rate)
+def get_my_hash_rate(currency):
+    if currency == 'BTC':
+    #using antminer (tera hashes)
+        my_hash_rate = 14
+        return(my_hash_rate)
+    if currency == 'ETH':
+        #33 MH
+        my_hash_rate = 0.033
+        return(my_hash_rate)
 
-def get_Mhash_joule():
-    #make this dynamic
-    return(10182)
+def get_Mhash_joule(currency):
+    if currency == 'BTC': 
+        return(10182)
+    if currency == 'ETH':
+        #MHash per second divided by watts
+        return(33/200) 
 
 def get_usd_joule():
     """Return dictionary mapping State IDs to dollars per joule average price in previous month.
