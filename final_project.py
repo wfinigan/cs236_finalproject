@@ -150,12 +150,16 @@ def get_blocks_yesterday():
     return response_json['stats']['block_count']
 
 
-def get_updated_hashrate():
-    expected_blocks = 144
-    difficulty = get_difficulty()
-    blocks_found = get_blocks_yesterday()
-    #in tera hashes
-    updated_hashrate = (blocks_found / expected_blocks * difficulty * 2**32 / 600 ) / 10**12
+def get_updated_hashrate(currency):
+    if currency == 'BTC':
+        expected_blocks = 144
+        difficulty = get_difficulty()
+        blocks_found = get_blocks_yesterday()
+        #in tera hashes
+        updated_hashrate = (blocks_found / expected_blocks * difficulty * 2**32 / 600 ) / 10**12
+    elif currency == 'ETH':
+        raise ValueError('Ethereum not yet implemented.')
+
     return updated_hashrate
 
 
@@ -220,19 +224,19 @@ def get_usd_joule():
     return states
 
 
-def get_share_mining():
-    hashrate = get_updated_hashrate()
-    my_hash_rate = get_my_hash_rate()
+def get_share_mining(currency):
+    hashrate = get_updated_hashrate(currency)
+    my_hash_rate = get_my_hash_rate(currency)
     share_mining = my_hash_rate/ (my_hash_rate + hashrate)
 
     return share_mining
 
 
-def calculate_costs(state='MA'):
+def calculate_costs(currency, state='MA'):
     usd_joule = get_usd_joule()[state]
 
-    Mhash_joule = get_Mhash_joule()
-    Mhash_second = get_my_hash_rate() * 10**6
+    Mhash_joule = get_Mhash_joule(currency)
+    Mhash_second = get_my_hash_rate(currency) * 10**6
     seconds = 60 * 10
     e_costs = usd_joule / Mhash_joule *Mhash_second  * seconds
 
@@ -253,7 +257,7 @@ def calculate_profit(case, currency):
         price = get_price(currency)
 
     fees = get_fees(currency)
-    share_mining = get_share_mining()
+    share_mining = get_share_mining(currency)
     USD = price * (block_reward + fees) * share_mining
 
     return USD
@@ -261,11 +265,11 @@ def calculate_profit(case, currency):
 
 def calculate_ev(case, currency, state='MA'):
     #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
-    costs = calculate_costs(state=state)
+    costs = calculate_costs(currency, state=state)
     profit = calculate_profit(case, currency)
     ev = profit - costs
 
     return ev
 
 
-calculate_ev('w', 'BTC', state='OK')
+calculate_ev('w', 'ETH', state='OK')
