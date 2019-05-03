@@ -66,7 +66,15 @@ def get_fees(currency, days=1):
         fees = float(response_json['stats']['fees']) / int(response_json['stats']['block_count'])
 
     elif currency == 'ETH':
-        raise ValueError('Ethereum not yet implemented.')
+        gas_total = 0
+        for block in ethereum_data['payload']:
+            gas_total += float(block['gasUsed'])
+
+        # get average fees per block
+        fees_gw = gas_total / len(ethereum_data['payload'])
+
+        # gigawei to wei
+        fees = fees_gw / 10**9
 
     else:
         raise ValueError('Currency {} not yet implemented.'.format(currency))
@@ -144,7 +152,8 @@ def get_difficulty(currency):
 
         diff = float(response_json['stats']['end_difficulty'])
     elif currency == 'ETH':
-        raise ValueError('Ethereum not yet implemented.')
+        # just use most recent diff
+        diff = int(ethereum_data['payload'][-1]['difficulty'])
 
     else:
         raise ValueError('Currency {} not yet implemented.'.format(currency))
@@ -252,7 +261,7 @@ def calculate_costs(currency, state='MA'):
     #expected time to mine a block is 17 seconds
         seconds = 12
     e_costs = usd_joule / Mhash_joule *Mhash_second  * seconds
-    
+
     return e_costs
 
 
@@ -287,10 +296,5 @@ def calculate_ev(case, currency, state='MA'):
 # store as global
 ethereum_data = get_ethereum_data()
 
-<<<<<<< Updated upstream
 calculate_ev('w', 'ETH', state='OK')
 calculate_ev('na', 'BTC', state='MA')
-
-=======
-calculate_ev('na', 'BTC', state='MA')
->>>>>>> Stashed changes
