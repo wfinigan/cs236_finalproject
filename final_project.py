@@ -234,12 +234,15 @@ def get_share_mining(currency):
 
 def calculate_costs(currency, state='MA'):
     usd_joule = get_usd_joule()[state]
-
     Mhash_joule = get_Mhash_joule(currency)
     Mhash_second = get_my_hash_rate(currency) * 10**6
-    seconds = 60 * 10
+    if currency == 'BTC':
+        seconds = 60 * 10
+    if currency == 'ETH':
+    #expected time to mine a block is 17 seconds
+        seconds = 17
     e_costs = usd_joule / Mhash_joule *Mhash_second  * seconds
-
+    
     return e_costs
 
 
