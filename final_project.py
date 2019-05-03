@@ -250,7 +250,7 @@ def calculate_costs(currency, state='MA'):
         seconds = 60 * 10
     if currency == 'ETH':
     #expected time to mine a block is 17 seconds
-        seconds = 17
+        seconds = 12
     e_costs = usd_joule / Mhash_joule *Mhash_second  * seconds
     
     return e_costs
