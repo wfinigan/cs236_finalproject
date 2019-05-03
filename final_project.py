@@ -42,7 +42,7 @@ def get_block_reward(currency):
     if currency == 'BTC':
         block_reward = 12.5
     elif currency == 'ETH':
-        raise ValueError('Ethereum not yet implemented.')
+        block_reward = 2
 
     return block_reward
 
@@ -59,7 +59,7 @@ def get_fees(currency, days=1):
         raise ValueError('Ethereum not yet implemented.')
 
     else:
-        raise ValueError('Currency {} not yet implemented.'.format(curency))
+        raise ValueError('Currency {} not yet implemented.'.format(currency))
 
     return fees
 
@@ -137,7 +137,7 @@ def get_difficulty(currency):
         raise ValueError('Ethereum not yet implemented.')
 
     else:
-        raise ValueError('Currency {} not yet implemented.'.format(curency))
+        raise ValueError('Currency {} not yet implemented.'.format(currency))
 
     return diff
 
@@ -153,7 +153,7 @@ def get_blocks_yesterday():
 def get_updated_hashrate(currency):
     if currency == 'BTC':
         expected_blocks = 144
-        difficulty = get_difficulty()
+        difficulty = get_difficulty(currency)
         blocks_found = get_blocks_yesterday()
         #in tera hashes
         updated_hashrate = (blocks_found / expected_blocks * difficulty * 2**32 / 600 ) / 10**12
@@ -276,3 +276,5 @@ def calculate_ev(case, currency, state='MA'):
 
 
 calculate_ev('w', 'ETH', state='OK')
+calculate_ev('na', 'BTC', state='MA')
+
