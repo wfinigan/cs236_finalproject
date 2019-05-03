@@ -18,6 +18,16 @@ headers = {
 session = Session()
 session.headers.update(headers)
 
+def get_ethereum_data():
+    headers = {
+        'x-api-key': 'UAK2176517602aef96e2ac77f16e7479153'
+    }
+
+    response = requests.get('https://web3api.io/api/v1/blocks', headers=headers)
+    response_json = response.json()
+
+    return response_json['payload']
+
 
 def get_price(currency):
     coind_id_map = {
@@ -274,7 +284,13 @@ def calculate_ev(case, currency, state='MA'):
 
     return ev
 
+# store as global
+ethereum_data = get_ethereum_data()
 
+<<<<<<< Updated upstream
 calculate_ev('w', 'ETH', state='OK')
 calculate_ev('na', 'BTC', state='MA')
 
+=======
+calculate_ev('na', 'BTC', state='MA')
+>>>>>>> Stashed changes
