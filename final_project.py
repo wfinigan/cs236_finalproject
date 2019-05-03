@@ -170,14 +170,14 @@ def get_blocks_yesterday():
 
 
 def get_updated_hashrate(currency):
+    difficulty = get_difficulty(currency)
     if currency == 'BTC':
         expected_blocks = 144
-        difficulty = get_difficulty(currency)
         blocks_found = get_blocks_yesterday()
         #in tera hashes
         updated_hashrate = (blocks_found / expected_blocks * difficulty * 2**32 / 600 ) / 10**12
     elif currency == 'ETH':
-        raise ValueError('Ethereum not yet implemented.')
+        updated_hashrate = ( difficulty  / 12 ) / 10**12
 
     return updated_hashrate
 
