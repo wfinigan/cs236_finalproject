@@ -7,7 +7,6 @@ from matplotlib import pyplot as plt
 from requests import Session
 import requests
 
-
 from secret import cmc_key, eia_key
 
 # coin market cap setup
@@ -47,6 +46,7 @@ def get_block_reward(currency):
 
     return block_reward
 
+
 def get_fees(currency, days=1):
     if currency == 'BTC':
         url = 'https://api.smartbit.com.au/v1/blockchain/stats'
@@ -77,42 +77,54 @@ def get_largest_pct_loss(currency):
     df = get_history_df(currency)
     df = df[df.shape[0]-365:].copy()
     df = df.reset_index()
+
     max_curr = 0
     old = df.loc[0]['Adj Close'].copy()
+
     for z in range(1,df.shape[0]):
         temp = df.loc[z]['Adj Close'].copy()
         change = (temp - old )/old
         if change <  max_curr:
             max_curr = change
         old = temp
-    return(max_curr)
+
+    return max_curr
+
 
 def get_largest_pct_gain(currency):
     df = get_history_df(currency)
     df = df[df.shape[0]-365:].copy()
     df = df.reset_index()
+
     max_curr = 0
     old = df.loc[0]['Adj Close'].copy()
+
     for z in range(1,df.shape[0]):
         temp = df.loc[z]['Adj Close'].copy()
         change = (temp - old )/old
         if change > max_curr:
             max_curr = change
         old = temp
-    return(max_curr)
+
+    return max_curr
+
 
 def get_avg_pct_change(currency):
     df = get_history_df(currency)
     df = df[df.shape[0]-365:].copy()
     df = df.reset_index()
+
     mylist = list()
     old = df.loc[0]['Adj Close'].copy()
+
     for z in range(1,df.shape[0]):
         temp = df.loc[z]['Adj Close'].copy()
         change = (temp - old )/old
         mylist.append(abs(change))
         old = temp
-    return(np.average(np.asarray(mylist)))
+
+    return np.average(np.asarray(mylist))
+
 
 def get_difficulty(currency):
     if currency == 'BTC':
@@ -129,6 +141,7 @@ def get_difficulty(currency):
 
     return diff
 
+
 def get_blocks_yesterday():
     url = 'https://api.smartbit.com.au/v1/blockchain/stats'
     response = requests.get(url)
@@ -136,30 +149,36 @@ def get_blocks_yesterday():
 
     return response_json['stats']['block_count']
 
+
 def get_updated_hashrate():
     expected_blocks = 144
     difficulty = get_difficulty()
     blocks_found = get_blocks_yesterday()
     #in tera hashes
     updated_hashrate = (blocks_found / expected_blocks * difficulty * 2**32 / 600 ) / 10**12
-    return(updated_hashrate)
+    return updated_hashrate
+
 
 def get_my_hash_rate(currency):
     if currency == 'BTC':
-    #using antminer (tera hashes)
+    # using antminer (tera hashes)
         my_hash_rate = 14
-        return(my_hash_rate)
+
     if currency == 'ETH':
-        #33 MH
+        # 33 MH
         my_hash_rate = 0.033
-        return(my_hash_rate)
+
+    return my_hash_rate
+
 
 def get_Mhash_joule(currency):
     if currency == 'BTC':
-        return(10182)
+        return 10182
+
     if currency == 'ETH':
         #MHash per second divided by watts
-        return(33/200)
+        return 33 / 200
+
 
 def get_usd_joule():
     """Return dictionary mapping State IDs to dollars per joule average price in previous month.
@@ -200,11 +219,14 @@ def get_usd_joule():
 
     return states
 
+
 def get_share_mining():
     hashrate = get_updated_hashrate()
     my_hash_rate = get_my_hash_rate()
     share_mining = my_hash_rate/ (my_hash_rate + hashrate)
-    return(share_mining)
+
+    return share_mining
+
 
 def calculate_costs(state='MA'):
     usd_joule = get_usd_joule()[state]
@@ -213,7 +235,9 @@ def calculate_costs(state='MA'):
     Mhash_second = get_my_hash_rate() * 10**6
     seconds = 60 * 10
     e_costs = usd_joule / Mhash_joule *Mhash_second  * seconds
-    return(e_costs)
+
+    return e_costs
+
 
 def calculate_profit(case, currency):
     block_reward = get_block_reward(currency)
@@ -227,16 +251,21 @@ def calculate_profit(case, currency):
         price = get_price(currency)*  (1 - get_avg_pct_change(currency))
     if case == 'na':
         price = get_price(currency)
+
     fees = get_fees(currency)
     share_mining = get_share_mining()
     USD = price * (block_reward + fees) * share_mining
-    return(USD)
+
+    return USD
+
 
 def calculate_ev(case, currency, state='MA'):
     #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
     costs = calculate_costs(state=state)
     profit = calculate_profit(case, currency)
     ev = profit - costs
-    return(ev)
+
+    return ev
+
 
 calculate_ev('w', 'BTC', state='OK')
