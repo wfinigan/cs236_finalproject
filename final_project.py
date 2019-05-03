@@ -10,8 +10,6 @@ import requests
 
 from secret import cmc_key, eia_key
 
-
-
 # coin market cap setup
 headers = {
     'Accepts': 'application/json',
@@ -21,45 +19,62 @@ headers = {
 session = Session()
 session.headers.update(headers)
 
-def get_prices(coin_ids=['1']):
-    """Returns a list of coin get_prices.
 
-    NOTE: Not using this for now -- could be useful when we want to do multiple coins.
-    """
+def get_price(currency):
+    coind_id_map = {
+        'BTC': '1',
+        'ETH': '2',
+    }
+
+    coin_id = coind_id_map[currency]
+
     bitcoin_api_url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
     params = {
-        'id': ','.join(coin_ids)
+        'id': coin_id
     }
 
     response = session.get(bitcoin_api_url, params=params)
     response_json = response.json()
 
-    prices = []
-    for coin_id in coin_ids:
-        prices.append(float(response_json['data'][coin_id]['quote']['USD']['price']))
+    return float(response_json['data'][coin_id]['quote']['USD']['price'])
 
-    return(prices)
 
-def get_price_btc():
-    return(get_prices(coin_ids=['1'])[0])
+def get_block_reward(currency):
+    if currency == 'BTC':
+        block_reward = 12.5
+    elif currency == 'ETH':
+        raise ValueError('Ethereum not yet implemented.')
 
-def get_block_reward():
-    #maybe ke this dynamic
-    block_reward = 12.5
-    return(block_reward)
+    return block_reward
 
-def get_fees(days=1):
-    url = 'https://api.smartbit.com.au/v1/blockchain/stats'
-    response = requests.get(url, params={'days': days})
-    response_json = response.json()
+def get_fees(currency, days=1):
+    if currency == 'BTC':
+        url = 'https://api.smartbit.com.au/v1/blockchain/stats'
+        response = requests.get(url, params={'days': days})
+        response_json = response.json()
 
-    fees = float(response_json['stats']['fees']) / int(response_json['stats']['block_count'])
+        fees = float(response_json['stats']['fees']) / int(response_json['stats']['block_count'])
+
+    elif currency == 'ETH':
+        raise ValueError('Ethereum not yet implemented.')
+
+    else:
+        raise ValueError('Currency {} not yet implemented.'.format(curency))
 
     return fees
 
+
+def get_history_df(currency):
+    try:
+        df = pd.read_csv('{}-USD.csv'.format(currency))
+    except IOError:
+        raise ValueError('No history file found for currency {}'.format(currency))
+
+    return df
+
+
 def get_largest_pct_loss(currency):
-    #make currency 'BTC', 'ETH'
-    df = pd.read_csv( currency+ '-USD.csv')
+    df = get_history_df(currency)
     df = df[df.shape[0]-365:].copy()
     df = df.reset_index()
     max_curr = 0
@@ -73,8 +88,7 @@ def get_largest_pct_loss(currency):
     return(max_curr)
 
 def get_largest_pct_gain(currency):
-    #make currency 'BTC', 'ETH'
-    df = pd.read_csv( currency+ '-USD.csv')
+    df = get_history_df(currency)
     df = df[df.shape[0]-365:].copy()
     df = df.reset_index()
     max_curr = 0
@@ -88,8 +102,7 @@ def get_largest_pct_gain(currency):
     return(max_curr)
 
 def get_avg_pct_change(currency):
-        #make currency 'BTC', 'ETH'
-    df = pd.read_csv( currency+ '-USD.csv')
+    df = get_history_df(currency)
     df = df[df.shape[0]-365:].copy()
     df = df.reset_index()
     mylist = list()
@@ -101,12 +114,20 @@ def get_avg_pct_change(currency):
         old = temp
     return(np.average(np.asarray(mylist)))
 
-def get_difficulty():
-    url = 'https://api.smartbit.com.au/v1/blockchain/stats'
-    response = requests.get(url)
-    response_json = response.json()
+def get_difficulty(currency):
+    if currency == 'BTC':
+        url = 'https://api.smartbit.com.au/v1/blockchain/stats'
+        response = requests.get(url)
+        response_json = response.json()
 
-    return float(response_json['stats']['end_difficulty'])
+        diff = float(response_json['stats']['end_difficulty'])
+    elif currency == 'ETH':
+        raise ValueError('Ethereum not yet implemented.')
+
+    else:
+        raise ValueError('Currency {} not yet implemented.'.format(curency))
+
+    return diff
 
 def get_blocks_yesterday():
     url = 'https://api.smartbit.com.au/v1/blockchain/stats'
@@ -134,11 +155,11 @@ def get_my_hash_rate(currency):
         return(my_hash_rate)
 
 def get_Mhash_joule(currency):
-    if currency == 'BTC': 
+    if currency == 'BTC':
         return(10182)
     if currency == 'ETH':
         #MHash per second divided by watts
-        return(33/200) 
+        return(33/200)
 
 def get_usd_joule():
     """Return dictionary mapping State IDs to dollars per joule average price in previous month.
@@ -195,26 +216,26 @@ def calculate_costs(state='MA'):
     return(e_costs)
 
 def calculate_profit(case, currency):
-    block_reward = get_block_reward()
+    block_reward = get_block_reward(currency)
     if case == 'w':
-        price = get_price_btc() * (1 + get_largest_pct_loss(currency))
+        price = get_price(currency) * (1 + get_largest_pct_loss(currency))
     if case == 'b':
-        price = get_price_btc() * (1 + get_largest_pct_gain(currency))
+        price = get_price(currency) * (1 + get_largest_pct_gain(currency))
     if case == 'ag':
-        price = get_price_btc() *  (1 + get_avg_pct_change(currency))
+        price = get_price(currency) *  (1 + get_avg_pct_change(currency))
     if case == 'ab':
-        price = get_price_btc()*  (1 - get_avg_pct_change(currency))
+        price = get_price(currency)*  (1 - get_avg_pct_change(currency))
     if case == 'na':
-        price = get_price_btc()
-    fees = get_fees()
+        price = get_price(currency)
+    fees = get_fees(currency)
     share_mining = get_share_mining()
     USD = price * (block_reward + fees) * share_mining
     return(USD)
 
-def calculate_ev(case,currency, state='MA'):
+def calculate_ev(case, currency, state='MA'):
     #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
     costs = calculate_costs(state=state)
-    profit = calculate_profit(case,currency)
+    profit = calculate_profit(case, currency)
     ev = profit - costs
     return(ev)
 
