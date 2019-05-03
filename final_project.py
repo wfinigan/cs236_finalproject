@@ -71,13 +71,13 @@ def get_largest_pct_loss(currency):
             max_curr = change
         old = temp
     return(max_curr)
-    
+
 def get_largest_pct_gain(currency):
     #make currency 'BTC', 'ETH'
     df = pd.read_csv( currency+ '-USD.csv')
     df = df[df.shape[0]-365:].copy()
     df = df.reset_index()
-    max_curr = 0 
+    max_curr = 0
     old = df.loc[0]['Adj Close'].copy()
     for z in range(1,df.shape[0]):
         temp = df.loc[z]['Adj Close'].copy()
@@ -86,13 +86,13 @@ def get_largest_pct_gain(currency):
             max_curr = change
         old = temp
     return(max_curr)
-    
+
 def get_avg_pct_change(currency):
         #make currency 'BTC', 'ETH'
     df = pd.read_csv( currency+ '-USD.csv')
     df = df[df.shape[0]-365:].copy()
     df = df.reset_index()
-    mylist = list() 
+    mylist = list()
     old = df.loc[0]['Adj Close'].copy()
     for z in range(1,df.shape[0]):
         temp = df.loc[z]['Adj Close'].copy()
@@ -100,11 +100,13 @@ def get_avg_pct_change(currency):
         mylist.append(abs(change))
         old = temp
     return(np.average(np.asarray(mylist)))
-    
+
 def get_difficulty():
-    # get the last published difficulty from when the difficulty was changed TO DO
-    difficulty = 6379265451411
-    return(difficulty)
+    url = 'https://api.smartbit.com.au/v1/blockchain/stats'
+    response = requests.get(url)
+    response_json = response.json()
+
+    return float(response_json['stats']['end_difficulty'])
 
 def get_blocks_yesterday():
     url = 'https://api.smartbit.com.au/v1/blockchain/stats'
@@ -209,9 +211,11 @@ def calculate_profit(case, currency):
     USD = price * (block_reward + fees) * share_mining
     return(USD)
 
-def calculate_ev(case,currency):
+def calculate_ev(case,currency, state='MA'):
     #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
-    costs = calculate_costs()
-    profit = calculate_profit()
+    costs = calculate_costs(state=state)
+    profit = calculate_profit(case,currency)
     ev = profit - costs
     return(ev)
+
+calculate_ev('w', 'BTC', state='OK')
