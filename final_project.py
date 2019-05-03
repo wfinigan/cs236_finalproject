@@ -67,11 +67,11 @@ def get_fees(currency, days=1):
 
     elif currency == 'ETH':
         gas_total = 0
-        for block in ethereum_data['payload']:
+        for block in ethereum_data:
             gas_total += float(block['gasUsed'])
 
         # get average fees per block
-        fees_gw = gas_total / len(ethereum_data['payload'])
+        fees_gw = gas_total / len(ethereum_data)
 
         # gigawei to wei
         fees = fees_gw / 10**9
@@ -153,7 +153,7 @@ def get_difficulty(currency):
         diff = float(response_json['stats']['end_difficulty'])
     elif currency == 'ETH':
         # just use most recent diff
-        diff = int(ethereum_data['payload'][-1]['difficulty'])
+        diff = int(ethereum_data[-1]['difficulty'])
 
     else:
         raise ValueError('Currency {} not yet implemented.'.format(currency))
