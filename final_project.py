@@ -303,6 +303,22 @@ ethereum_data = get_ethereum_data()
 calculate_ev('na', 'ETH', state='MA')
 calculate_ev('na', 'BTC', state='MA')
 
+def what_to_do(case, state):
+    btc_ev = calculate_ev(case, 'BTC', state)
+    ether_ev = calculate_ev(case, 'ETH', state)
+    decision = max(btc_ev, ether_ev, 0)
+    if decision == btc_ev:
+        text = "BTC"
+    elif decision== ether_ev:
+        text = "ETH"
+    else:
+        text = "NA"
+    return([decision, text])
+
+what_to_do('na', state = 'MA')
+what_to_do('na', state = 'OK')
+what_to_do('b', state = 'OK')
+
 
 
 #graph for project
