@@ -188,7 +188,7 @@ def get_my_hash_rate(currency):
         my_hash_rate = 14
 
     if currency == 'ETH':
-        # 33 MH convert to TH
+        # 33 MH convert to TeraHashes
         my_hash_rate = 33 * 10 **-6
 
     return my_hash_rate
@@ -258,7 +258,7 @@ def calculate_costs(currency, state='MA'):
     if currency == 'BTC':
         seconds = 60 * 10
     if currency == 'ETH':
-    #expected time to mine a block is 17 seconds
+    #expected time to mine a block is 12 seconds
         seconds = 12
     e_costs = usd_joule / Mhash_joule *Mhash_second  * seconds
 
@@ -289,7 +289,11 @@ def calculate_ev(case, currency, state='MA'):
     #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
     costs = calculate_costs(currency, state=state)
     profit = calculate_profit(case, currency)
-    ev = profit - costs
+    if currency == 'BTC':
+        seconds = 600
+    elif currency == 'ETH':
+        seconds = 12
+    ev = (profit - costs)/seconds
 
     return ev
 
@@ -298,3 +302,27 @@ ethereum_data = get_ethereum_data()
 
 calculate_ev('na', 'ETH', state='MA')
 calculate_ev('na', 'BTC', state='MA')
+
+
+
+#graph for project
+df = get_history_df('BTC')
+df = df[df.shape[0]-365:].copy()
+df = df.reset_index()
+
+max_curr = 0
+old = df.loc[0]['Adj Close'].copy()
+track = list()
+for z in range(1,df.shape[0]):
+    temp = df.loc[z]['Adj Close'].copy()
+    change = (temp - old )/old
+    track.append( change)
+    old = temp
+
+plt.hist(track *100)
+plt.xlabel("Percent Return")
+plt.ylabel("Count")
+plt.title("Histogram of Bitcoin Close to Close Returns")
+plt.show()
+
+
