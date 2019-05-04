@@ -44,7 +44,7 @@ def get_difficulty(currency, timestamp):
     if currency == 'BTC':
         df = read_difficulty('BTC')
         diff = df[df['Date'] ==pd.Timestamp(timestamp.date())]['Difficulty'].copy()
-        diff = diff.iloc[0]
+        diff = list(diff)[0]
     elif currency == 'ETH':
         # just use most recent diff
         diff = int(ethereum_data[0]['difficulty'])
@@ -74,7 +74,7 @@ def get_fees(currency, timestamp):
     if currency == 'BTC':
         df = get_avg_fee(currency)
         fees = df[df['Date'] ==pd.Timestamp(timestamp.date())]['Fee_Block'].copy()
-        fees = fees.iloc[0]
+        fees = list(fees)[0]
 
     elif currency == 'ETH':
         gas_total = 0
@@ -108,7 +108,7 @@ def get_blocks_each_day(currency):
 def get_blocks_yesterday(currency, timestamp):
     df = get_blocks_each_day(currency)
     blocks_yesterday = df[df['Date'] ==pd.Timestamp(timestamp.date())]['Blocks_Found'].copy()
-    blocks_yesterday = blocks_yesterday.iloc[0]
+    blocks_yesterday = list(blocks_yesterday)[0]
     return blocks_yesterday
  
 def get_price(currency, timestamp): 
@@ -117,7 +117,7 @@ def get_price(currency, timestamp):
         df = df[["Timestamp", "Open"]].copy()
         df = df.loc[(df['Timestamp'] >= '2018-01-01') & (df['Timestamp'] <= '2019-01-01')].copy()
         df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-        price = df[df['Timestamp'] == timestamp]['Open'][0]
+        price = list(df[df['Timestamp'] == timestamp]['Open'])[0]
     return price
 
 
@@ -198,11 +198,11 @@ def get_avg_pct_change(currency):
 
 
 
-def get_updated_hashrate(currency):
-    difficulty = get_difficulty(currency)
+def get_updated_hashrate(currency, timestamp):
+    difficulty = get_difficulty(currency, timestamp)
     if currency == 'BTC':
         expected_blocks = 144
-        blocks_found = get_blocks_yesterday()
+        blocks_found = get_blocks_yesterday(currency, timestamp)
         #in tera hashes
         updated_hashrate = (blocks_found / expected_blocks * difficulty * 2**32 / 600 ) / 10**12
     elif currency == 'ETH':
@@ -272,8 +272,8 @@ def get_usd_joule():
     return states
 
 
-def get_share_mining(currency):
-    hashrate = get_updated_hashrate(currency)
+def get_share_mining(currency, timestamp):
+    hashrate = get_updated_hashrate(currency,timestamp)
     my_hash_rate = get_my_hash_rate(currency)
     share_mining = my_hash_rate/ (my_hash_rate + hashrate)
 
@@ -305,18 +305,18 @@ def calculate_profit(case, currency, timestamp):
     if case == 'ab':
         price = get_price(currency)*  (1 - get_avg_pct_change(currency))
     if case == 'na':
-        price = get_price(currency)
+        price = get_price(currency, timestamp)
 
-    fees = get_fees(currency)
-    share_mining = get_share_mining(currency)
+    fees = get_fees(currency,timestamp)
+    share_mining = get_share_mining(currency, timestamp)
     USD = price * (block_reward + fees) * share_mining
 
     return USD
 
 
-def calculate_ev(case, currency, state='MA', timestamp):
+def calculate_ev(case, currency, timestamp, state='MA'):
     #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
-    costs = calculate_costs(currency, state=state, timestamp)
+    costs = calculate_costs(currency, state=state)
     profit = calculate_profit(case, currency, timestamp)
     if currency == 'BTC':
         seconds = 600
@@ -329,8 +329,6 @@ def calculate_ev(case, currency, state='MA', timestamp):
 # store as global
 ethereum_data = get_ethereum_data()
 
-calculate_ev('na', 'ETH', state='MA')
-calculate_ev('na', 'BTC', state='MA')
 
 def what_to_do(case, state, timestamp):
     btc_ev = calculate_ev(case, 'BTC', state)
@@ -348,6 +346,16 @@ what_to_do('na', state = 'MA')
 what_to_do('na', state = 'OK')
 what_to_do('b', state = 'OK')
 
+def run_backtest():
+    df = pd.read_csv('price_historical_year.csv')
+    df = df[["Timestamp"]].copy()
+    df = df.loc[(df['Timestamp'] >= '2018-01-01') & (df['Timestamp'] <= '2019-01-01')].copy()
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+    df['EV'] = 0 
+    for i in range(len(df)):
+        timestamp = df.iloc[i][0]
+        print(timestamp)
+        print calculate_ev('na', 'BTC',timestamp,state='MA')
 
-
+run_backtest()
     
