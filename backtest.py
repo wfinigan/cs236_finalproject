@@ -232,44 +232,12 @@ def get_Mhash_joule(currency):
         return 33 / 200
 
 
-def get_usd_joule():
-    """Return dictionary mapping State IDs to dollars per joule average price in previous month.
-    """
-    url = 'http://api.eia.gov/category/'
-    params = {
-        'api_key': eia_key,
-        'category_id': '40'
-    }
-    response = requests.get(url, params=params)
-    response_json = response.json()
-
-    series_ids = []
-    for child in response_json['category']['childseries']:
-        tokens = child['series_id'].split('.')
-
-        if tokens[-1] == 'M':
-            state = tokens[-2].split('-')[0]
-            if len(state) == 2 and state != "US":
-                series_ids.append(child['series_id'])
-
-    states = {}
-    for series_id in series_ids:
-        url = 'http://api.eia.gov/series/'
-        params = {
-            'api_key': eia_key,
-            'series_id': series_id,
-        }
-        response = requests.get(url, params=params)
-        response_json = response.json()
-
-        # get state name
-        state = response_json['series'][0]['geography'].split('-')[1]
-
-        # convert to dollars per joule
-        cost = response_json['series'][0]['data'][0][1] / (100 * (3.6 * 10**6))
-        states[state] = cost
-
-    return states
+def get_usd_joule(timestamp, state):
+     df = pd.read_csv('data_backtest/sales_revenue.csv')
+     df = df[['year', 'month', 'state', 'price']].copy()
+     price_all = df[df['month'] ==timestamp.month ]
+     price = list(price_all[price_all.state == state]['price'])[0] / (100 * (3.6 * 10**6))
+     return price
 
 
 def get_share_mining(currency, timestamp):
@@ -280,8 +248,8 @@ def get_share_mining(currency, timestamp):
     return share_mining
 
 
-def calculate_costs(currency, state='MA'):
-    usd_joule = get_usd_joule()[state]
+def calculate_costs(currency, timestamp, state='MA'):
+    usd_joule = get_usd_joule(timestamp, state)
     Mhash_joule = get_Mhash_joule(currency)
     Mhash_second = get_my_hash_rate(currency) * 10**6
     if currency == 'BTC':
@@ -316,7 +284,7 @@ def calculate_profit(case, currency, timestamp):
 
 def calculate_ev(case, currency, timestamp, state='MA'):
     #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
-    costs = calculate_costs(currency, state=state)
+    costs = calculate_costs(currency, timestamp,state=state)
     profit = calculate_profit(case, currency, timestamp)
     if currency == 'BTC':
         seconds = 600
@@ -347,15 +315,18 @@ what_to_do('na', state = 'OK')
 what_to_do('b', state = 'OK')
 
 def run_backtest():
+    evs = list()
     df = pd.read_csv('price_historical_year.csv')
     df = df[["Timestamp"]].copy()
     df = df.loc[(df['Timestamp'] >= '2018-01-01') & (df['Timestamp'] <= '2019-01-01')].copy()
     df['Timestamp'] = pd.to_datetime(df['Timestamp'])
     df['EV'] = 0 
     for i in range(len(df)):
-        timestamp = df.iloc[i][0]
+        timestamp = list( df.iloc[i])[0]
         print(timestamp)
-        print calculate_ev('na', 'BTC',timestamp,state='MA')
-
-run_backtest()
+        temp = calculate_ev('na', 'BTC',timestamp,state='MA')
+        print temp
+        evs.append( temp)
+    return(evs)
+btc_test = run_backtest()
     
