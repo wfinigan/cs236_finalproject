@@ -14,7 +14,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from requests import Session
 import requests
-
+import datetime
 from secret import cmc_key, eia_key
 
 
@@ -39,6 +39,22 @@ def converrt_difficulty_to_tera_hash(currency, df):
         df['tera_hashrate'] = (df['Difficulty'] / 12 ) / 10 **12
     return df
 
+
+def get_difficulty(currency, timestamp):
+    if currency == 'BTC':
+        df = read_difficulty('BTC')
+        diff = df[df['Date'] ==pd.Timestamp(timestamp.date())]['Difficulty'].copy()
+        diff = diff.iloc[0]
+    elif currency == 'ETH':
+        # just use most recent diff
+        diff = int(ethereum_data[0]['difficulty'])
+
+    else:
+        raise ValueError('Currency {} not yet implemented.'.format(currency))
+
+    return diff
+
+
 def get_avg_fee(currency):
     if currency == 'BTC':
         df = pd.read_csv('data_backtest/fees_{}.csv'.format(currency), names=['Date', 'Fees'])
@@ -54,6 +70,28 @@ def get_avg_fee(currency):
 
     return df
 
+def get_fees(currency, timestamp):
+    if currency == 'BTC':
+        df = get_avg_fee(currency)
+        fees = df[df['Date'] ==pd.Timestamp(timestamp.date())]['Fee_Block'].copy()
+        fees = fees.iloc[0]
+
+    elif currency == 'ETH':
+        gas_total = 0
+        for block in ethereum_data:
+            gas_total += float(block['fee_total'])
+
+        # get average fees per block
+        fees_gw = gas_total / len(ethereum_data)
+
+        # wei to ether
+        fees = fees_gw / 10**18
+
+    else:
+        raise ValueError('Currency {} not yet implemented.'.format(currency))
+
+    return fees
+
 def get_blocks_each_day(currency):
     if currency == 'BTC':
         df = pd.read_csv('data_backtest/supply_{}.csv'.format(currency),names=['Date', 'Supply'])
@@ -66,5 +104,250 @@ def get_blocks_each_day(currency):
     elif currency == 'ETH':
         return "have no implemented ether"
     return df
+
+def get_blocks_yesterday(currency, timestamp):
+    df = get_blocks_each_day(currency)
+    blocks_yesterday = df[df['Date'] ==pd.Timestamp(timestamp.date())]['Blocks_Found'].copy()
+    blocks_yesterday = blocks_yesterday.iloc[0]
+    return blocks_yesterday
+ 
+def get_price(currency, timestamp): 
+    if currency == 'BTC':
+        df = pd.read_csv('price_historical_year.csv')
+        df = df[["Timestamp", "Open"]].copy()
+        df = df.loc[(df['Timestamp'] >= '2018-01-01') & (df['Timestamp'] <= '2019-01-01')].copy()
+        df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+        price = df[df['Timestamp'] == timestamp]['Open'][0]
+    return price
+
+
+
+def get_block_reward(currency):
+    if currency == 'BTC':
+        block_reward = 12.5
+    elif currency == 'ETH':
+        block_reward = 2
+
+    return block_reward
+
+
+
+
+def get_history_df(currency):
+    try:
+        df = pd.read_csv('{}-USD.csv'.format(currency))
+    except IOError:
+        raise ValueError('No history file found for currency {}'.format(currency))
+
+    return df
+
+
+def get_largest_pct_loss(currency):
+    df = get_history_df(currency)
+    df = df[df.shape[0]-365:].copy()
+    df = df.reset_index()
+
+    max_curr = 0
+    old = df.loc[0]['Adj Close'].copy()
+
+    for z in range(1,df.shape[0]):
+        temp = df.loc[z]['Adj Close'].copy()
+        change = (temp - old )/old
+        if change <  max_curr:
+            max_curr = change
+        old = temp
+
+    return max_curr
+
+
+def get_largest_pct_gain(currency):
+    df = get_history_df(currency)
+    df = df[df.shape[0]-365:].copy()
+    df = df.reset_index()
+
+    max_curr = 0
+    old = df.loc[0]['Adj Close'].copy()
+
+    for z in range(1,df.shape[0]):
+        temp = df.loc[z]['Adj Close'].copy()
+        change = (temp - old )/old
+        if change > max_curr:
+            max_curr = change
+        old = temp
+
+    return max_curr
+
+
+def get_avg_pct_change(currency):
+    df = get_history_df(currency)
+    df = df[df.shape[0]-365:].copy()
+    df = df.reset_index()
+
+    mylist = list()
+    old = df.loc[0]['Adj Close'].copy()
+
+    for z in range(1,df.shape[0]):
+        temp = df.loc[z]['Adj Close'].copy()
+        change = (temp - old )/old
+        mylist.append(abs(change))
+        old = temp
+
+    return np.average(np.asarray(mylist))
+
+
+
+
+
+def get_updated_hashrate(currency):
+    difficulty = get_difficulty(currency)
+    if currency == 'BTC':
+        expected_blocks = 144
+        blocks_found = get_blocks_yesterday()
+        #in tera hashes
+        updated_hashrate = (blocks_found / expected_blocks * difficulty * 2**32 / 600 ) / 10**12
+    elif currency == 'ETH':
+        updated_hashrate = ( difficulty  / 12 ) / 10**12
+
+    return updated_hashrate
+
+
+def get_my_hash_rate(currency):
+    if currency == 'BTC':
+    # using antminer (tera hashes)
+        my_hash_rate = 14
+
+    if currency == 'ETH':
+        # 33 MH convert to TeraHashes
+        my_hash_rate = 33 * 10 **-6
+
+    return my_hash_rate
+
+
+def get_Mhash_joule(currency):
+    if currency == 'BTC':
+        return 10182
+
+    if currency == 'ETH':
+        #MHash per second divided by watts
+        return 33 / 200
+
+
+def get_usd_joule():
+    """Return dictionary mapping State IDs to dollars per joule average price in previous month.
+    """
+    url = 'http://api.eia.gov/category/'
+    params = {
+        'api_key': eia_key,
+        'category_id': '40'
+    }
+    response = requests.get(url, params=params)
+    response_json = response.json()
+
+    series_ids = []
+    for child in response_json['category']['childseries']:
+        tokens = child['series_id'].split('.')
+
+        if tokens[-1] == 'M':
+            state = tokens[-2].split('-')[0]
+            if len(state) == 2 and state != "US":
+                series_ids.append(child['series_id'])
+
+    states = {}
+    for series_id in series_ids:
+        url = 'http://api.eia.gov/series/'
+        params = {
+            'api_key': eia_key,
+            'series_id': series_id,
+        }
+        response = requests.get(url, params=params)
+        response_json = response.json()
+
+        # get state name
+        state = response_json['series'][0]['geography'].split('-')[1]
+
+        # convert to dollars per joule
+        cost = response_json['series'][0]['data'][0][1] / (100 * (3.6 * 10**6))
+        states[state] = cost
+
+    return states
+
+
+def get_share_mining(currency):
+    hashrate = get_updated_hashrate(currency)
+    my_hash_rate = get_my_hash_rate(currency)
+    share_mining = my_hash_rate/ (my_hash_rate + hashrate)
+
+    return share_mining
+
+
+def calculate_costs(currency, state='MA'):
+    usd_joule = get_usd_joule()[state]
+    Mhash_joule = get_Mhash_joule(currency)
+    Mhash_second = get_my_hash_rate(currency) * 10**6
+    if currency == 'BTC':
+        seconds = 60 * 10
+    if currency == 'ETH':
+    #expected time to mine a block is 12 seconds
+        seconds = 12
+    e_costs = usd_joule / Mhash_joule *Mhash_second  * seconds
+
+    return e_costs
+
+
+def calculate_profit(case, currency, timestamp):
+    block_reward = get_block_reward(currency)
+    if case == 'w':
+        price = get_price(currency) * (1 + get_largest_pct_loss(currency))
+    if case == 'b':
+        price = get_price(currency) * (1 + get_largest_pct_gain(currency))
+    if case == 'ag':
+        price = get_price(currency) *  (1 + get_avg_pct_change(currency))
+    if case == 'ab':
+        price = get_price(currency)*  (1 - get_avg_pct_change(currency))
+    if case == 'na':
+        price = get_price(currency)
+
+    fees = get_fees(currency)
+    share_mining = get_share_mining(currency)
+    USD = price * (block_reward + fees) * share_mining
+
+    return USD
+
+
+def calculate_ev(case, currency, state='MA', timestamp):
+    #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
+    costs = calculate_costs(currency, state=state, timestamp)
+    profit = calculate_profit(case, currency, timestamp)
+    if currency == 'BTC':
+        seconds = 600
+    elif currency == 'ETH':
+        seconds = 12
+    ev = (profit - costs)/seconds
+
+    return ev
+
+# store as global
+ethereum_data = get_ethereum_data()
+
+calculate_ev('na', 'ETH', state='MA')
+calculate_ev('na', 'BTC', state='MA')
+
+def what_to_do(case, state, timestamp):
+    btc_ev = calculate_ev(case, 'BTC', state)
+    ether_ev = calculate_ev(case, 'ETH', state)
+    decision = max(btc_ev, ether_ev, 0)
+    if decision == btc_ev:
+        text = "BTC"
+    elif decision== ether_ev:
+        text = "ETH"
+    else:
+        text = "NA"
+    return([decision, text])
+
+what_to_do('na', state = 'MA')
+what_to_do('na', state = 'OK')
+what_to_do('b', state = 'OK')
+
+
 
     
