@@ -19,14 +19,10 @@ session = Session()
 session.headers.update(headers)
 
 def get_ethereum_data():
-    headers = {
-        'x-api-key': 'UAK2176517602aef96e2ac77f16e7479153'
-    }
-
-    response = requests.get('https://web3api.io/api/v1/blocks', headers=headers)
+    response = requests.get('https://api.blockchair.com/ethereum/blocks')
     response_json = response.json()
 
-    return response_json['payload']
+    return response_json['data']
 
 
 def get_price(currency):
@@ -68,13 +64,13 @@ def get_fees(currency, days=1):
     elif currency == 'ETH':
         gas_total = 0
         for block in ethereum_data:
-            gas_total += float(block['gasUsed'])
+            gas_total += float(block['fee_total'])
 
         # get average fees per block
         fees_gw = gas_total / len(ethereum_data)
 
-        # gigawei to wei
-        fees = fees_gw / 10**9
+        # wei to ether
+        fees = fees_gw / 10**18
 
     else:
         raise ValueError('Currency {} not yet implemented.'.format(currency))
@@ -153,7 +149,7 @@ def get_difficulty(currency):
         diff = float(response_json['stats']['end_difficulty'])
     elif currency == 'ETH':
         # just use most recent diff
-        diff = int(ethereum_data[-1]['difficulty'])
+        diff = int(ethereum_data[0]['difficulty'])
 
     else:
         raise ValueError('Currency {} not yet implemented.'.format(currency))
@@ -318,7 +314,3 @@ def what_to_do(case, state):
 what_to_do('na', state = 'MA')
 what_to_do('na', state = 'OK')
 what_to_do('b', state = 'OK')
-
-
-
-
