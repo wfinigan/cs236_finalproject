@@ -321,24 +321,4 @@ what_to_do('b', state = 'OK')
 
 
 
-#graph for project
-df = get_history_df('BTC')
-df = df[df.shape[0]-365:].copy()
-df = df.reset_index()
-
-max_curr = 0
-old = df.loc[0]['Adj Close'].copy()
-track = list()
-for z in range(1,df.shape[0]):
-    temp = df.loc[z]['Adj Close'].copy()
-    change = (temp - old )/old
-    track.append( change)
-    old = temp
-
-plt.hist(track *100)
-plt.xlabel("Percent Return")
-plt.ylabel("Count")
-plt.title("Histogram of Bitcoin Close to Close Returns")
-plt.show()
-
 
