@@ -39,4 +39,32 @@ def converrt_difficulty_to_tera_hash(currency, df):
         df['tera_hashrate'] = (df['Difficulty'] / 12 ) / 10 **12
     return df
 
+def get_avg_fee(currency):
+    if currency == 'BTC':
+        df = pd.read_csv('data_backtest/fees_{}.csv'.format(currency), names=['Date', 'Fees'])
+        df['Date'] = pd.to_datetime(df['Date'])  
+        df = df.loc[(df['Date'] >= '2018-01-01') & (df['Date'] <= '2019-01-01')].copy()
+        blocks = get_blocks_each_day(currency)
+        df = pd.concat([df, blocks], axis=1)
+        df['Fee_Block'] = df['Fees']/ df['Blocks_Found']
+        df = df[['Date', "Fee_Block"]].copy()
+        df = df.loc[:,~df.columns.duplicated()].copy()
+    elif currency == 'ETH':
+      return "not implemented"
 
+    return df
+
+def get_blocks_each_day(currency):
+    if currency == 'BTC':
+        df = pd.read_csv('data_backtest/supply_{}.csv'.format(currency),names=['Date', 'Supply'])
+        df['Date'] = pd.to_datetime(df['Date'])  
+        df = df.loc[(df['Date'] >= '2017-12-31') & (df['Date'] <= '2019-01-02')].copy()
+        df['Money_Added'] = df['Supply'].diff()
+        df['Blocks_Found'] = df['Money_Added']/12.5
+        df = df.drop(columns = ['Supply', 'Money_Added'])
+        df = df.loc[(df['Date'] >= '2018-01-01') & (df['Date'] <= '2019-01-01')].copy()
+    elif currency == 'ETH':
+        return "have no implemented ether"
+    return df
+
+    
