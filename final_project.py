@@ -25,55 +25,74 @@ def get_ethereum_data():
     return response_json['data']
 
 
-def get_price(currency):
-    coind_id_map = {
-        'BTC': '1',
-        'ETH': '2',
-    }
+def get_price(currency, timestamp):
+    if timestamp is None:
+        coind_id_map = {
+            'BTC': '1',
+            'ETH': '2',
+        }
 
-    coin_id = coind_id_map[currency]
+        coin_id = coind_id_map[currency]
 
-    bitcoin_api_url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
-    params = {
-        'id': coin_id
-    }
+        bitcoin_api_url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
+        params = {
+            'id': coin_id
+        }
 
-    response = session.get(bitcoin_api_url, params=params)
-    response_json = response.json()
-
-    return float(response_json['data'][coin_id]['quote']['USD']['price'])
-
-
-def get_block_reward(currency):
-    if currency == 'BTC':
-        block_reward = 12.5
-    elif currency == 'ETH':
-        block_reward = 2
-
-    return block_reward
-
-
-def get_fees(currency, days=1):
-    if currency == 'BTC':
-        url = 'https://api.smartbit.com.au/v1/blockchain/stats'
-        response = requests.get(url, params={'days': days})
+        response = session.get(bitcoin_api_url, params=params)
         response_json = response.json()
 
-        fees = float(response_json['stats']['fees']) / int(response_json['stats']['block_count'])
-
-    elif currency == 'ETH':
-        gas_total = 0
-        for block in ethereum_data:
-            gas_total += float(block['fee_total'])
-
-        # get average fees per block
-        fees_gw = gas_total / len(ethereum_data)
-
-        # wei to ether
-        fees = fees_gw / 10**18
-
+        return float(response_json['data'][coin_id]['quote']['USD']['price'])
     else:
-        raise ValueError('Currency {} not yet implemented.'.format(currency))
+        raise ValueError('No historical data for year {}'.format(timestamp.year))
+
+
+def get_block_reward(currency, timestamp):
+    block_reward_data = {
+        'BTC': {
+            None: 12.5,
+            2018: 12.5
+        },
+        'ETH': {
+            None: 3,
+            2018: 2
+        }
+    }
+
+    if timestamp is None:
+        return block_reward_data[currency][timestamp]
+    else:
+        if block_reward_data[currency].get(timestamp.year) is not None:
+            return block_reward_data[currency][timestamp.year]
+        else:
+            raise ValueError('No historical data for year {}'.format(timestamp.year))
+
+
+def get_fees(currency, timestamp, days=1):
+    if timestamp is None:
+        if currency == 'BTC':
+            url = 'https://api.smartbit.com.au/v1/blockchain/stats'
+            response = requests.get(url, params={'days': days})
+            response_json = response.json()
+
+            fees = float(response_json['stats']['fees']) / int(response_json['stats']['block_count'])
+
+        elif currency == 'ETH':
+            gas_total = 0
+            for block in ethereum_data_now:
+                gas_total += float(block['fee_total'])
+
+            # get average fees per block
+            fees_gw = gas_total / len(ethereum_data_now)
+
+            # wei to ether
+            fees = fees_gw / 10**18
+
+        else:
+            raise ValueError('Currency {} not yet implemented.'.format(currency))
+    else:
+        raise ValueError('Historical data not yet implemented.')
+
 
     return fees
 
@@ -140,117 +159,135 @@ def get_avg_pct_change(currency):
     return np.average(np.asarray(mylist))
 
 
-def get_difficulty(currency):
-    if currency == 'BTC':
-        url = 'https://api.smartbit.com.au/v1/blockchain/stats'
-        response = requests.get(url)
-        response_json = response.json()
+def get_difficulty(currency, timestamp):
+    if timestamp is None:
+        if currency == 'BTC':
+            url = 'https://api.smartbit.com.au/v1/blockchain/stats'
+            response = requests.get(url)
+            response_json = response.json()
 
-        diff = float(response_json['stats']['end_difficulty'])
-    elif currency == 'ETH':
-        # just use most recent diff
-        diff = int(ethereum_data[0]['difficulty'])
+            diff = float(response_json['stats']['end_difficulty'])
+        elif currency == 'ETH':
+            # just use most recent diff
+            diff = int(ethereum_data_now[0]['difficulty'])
 
+        else:
+            raise ValueError('Currency {} not yet implemented.'.format(currency))
     else:
-        raise ValueError('Currency {} not yet implemented.'.format(currency))
+        raise ValueError('Historical data not yet implemented.')
 
     return diff
 
 
-def get_blocks_yesterday():
-    url = 'https://api.smartbit.com.au/v1/blockchain/stats'
-    response = requests.get(url)
-    response_json = response.json()
+def get_blocks_yesterday(currency, timestamp):
+    if timestamp is None:
+        if currency == 'BTC':
+            url = 'https://api.smartbit.com.au/v1/blockchain/stats'
+            response = requests.get(url)
+            response_json = response.json()
+        elif currency == 'ETH':
+            raise ValueError('ETH Not yet implemented.')
+        else:
+            raise ValueError('Currency {} not yet implemented.'.format(currency))
+    else:
+        raise ValueError('Historical data not yet implemented.')
 
     return response_json['stats']['block_count']
 
 
-def get_updated_hashrate(currency):
-    difficulty = get_difficulty(currency)
+def get_updated_hashrate(currency, timestamp):
+    difficulty = get_difficulty(currency, timestamp)
     if currency == 'BTC':
         expected_blocks = 144
-        blocks_found = get_blocks_yesterday()
+        blocks_found = get_blocks_yesterday(currency, timestamp)
         #in tera hashes
         updated_hashrate = (blocks_found / expected_blocks * difficulty * 2**32 / 600 ) / 10**12
     elif currency == 'ETH':
-        updated_hashrate = ( difficulty  / 12 ) / 10**12
+        updated_hashrate = (difficulty  / 12 ) / 10**12
 
     return updated_hashrate
 
 
-def get_my_hash_rate(currency):
-    if currency == 'BTC':
-    # using antminer (tera hashes)
-        my_hash_rate = 14
+def get_my_hash_rate(currency, timestamp):
+    if timestamp is None:
+        if currency == 'BTC':
+        # using antminer (tera hashes)
+            my_hash_rate = 14
 
-    if currency == 'ETH':
-        # 33 MH convert to TeraHashes
-        my_hash_rate = 33 * 10 **-6
+        if currency == 'ETH':
+            # 33 MH convert to TeraHashes
+            my_hash_rate = 33 * 10 **-6
+    else:
+        raise ValueError('Historical data not yet implemented.')
 
     return my_hash_rate
 
 
-def get_Mhash_joule(currency):
-    if currency == 'BTC':
-        return 10182
+def get_Mhash_joule(currency, timestamp):
+    if timestamp is None:
+        if currency == 'BTC':
+            return 10182
 
-    if currency == 'ETH':
-        #MHash per second divided by watts
-        return 33 / 200
+        if currency == 'ETH':
+            #MHash per second divided by watts
+            return 33 / 200
+    else:
+        raise ValueError('Historical data not yet implemented.')
 
-
-def get_usd_joule():
+def get_usd_joule(timestamp):
     """Return dictionary mapping State IDs to dollars per joule average price in previous month.
     """
-    url = 'http://api.eia.gov/category/'
-    params = {
-        'api_key': eia_key,
-        'category_id': '40'
-    }
-    response = requests.get(url, params=params)
-    response_json = response.json()
-
-    series_ids = []
-    for child in response_json['category']['childseries']:
-        tokens = child['series_id'].split('.')
-
-        if tokens[-1] == 'M':
-            state = tokens[-2].split('-')[0]
-            if len(state) == 2 and state != "US":
-                series_ids.append(child['series_id'])
-
-    states = {}
-    for series_id in series_ids:
-        url = 'http://api.eia.gov/series/'
+    if timestamp is None:
+        url = 'http://api.eia.gov/category/'
         params = {
             'api_key': eia_key,
-            'series_id': series_id,
+            'category_id': '40'
         }
         response = requests.get(url, params=params)
         response_json = response.json()
 
-        # get state name
-        state = response_json['series'][0]['geography'].split('-')[1]
+        series_ids = []
+        for child in response_json['category']['childseries']:
+            tokens = child['series_id'].split('.')
 
-        # convert to dollars per joule
-        cost = response_json['series'][0]['data'][0][1] / (100 * (3.6 * 10**6))
-        states[state] = cost
+            if tokens[-1] == 'M':
+                state = tokens[-2].split('-')[0]
+                if len(state) == 2 and state != "US":
+                    series_ids.append(child['series_id'])
 
+        states = {}
+        for series_id in series_ids:
+            url = 'http://api.eia.gov/series/'
+            params = {
+                'api_key': eia_key,
+                'series_id': series_id,
+            }
+            response = requests.get(url, params=params)
+            response_json = response.json()
+
+            # get state name
+            state = response_json['series'][0]['geography'].split('-')[1]
+
+            # convert to dollars per joule
+            cost = response_json['series'][0]['data'][0][1] / (100 * (3.6 * 10**6))
+            states[state] = cost
+    else:
+        raise ValueError('Historical data not yet implemented.')
     return states
 
 
-def get_share_mining(currency):
-    hashrate = get_updated_hashrate(currency)
-    my_hash_rate = get_my_hash_rate(currency)
+def get_share_mining(currency, timestamp):
+    hashrate = get_updated_hashrate(currency, timestamp)
+    my_hash_rate = get_my_hash_rate(currency, timestamp)
     share_mining = my_hash_rate/ (my_hash_rate + hashrate)
 
     return share_mining
 
 
-def calculate_costs(currency, state='MA'):
-    usd_joule = get_usd_joule()[state]
-    Mhash_joule = get_Mhash_joule(currency)
-    Mhash_second = get_my_hash_rate(currency) * 10**6
+def calculate_costs(currency, state, timestamp):
+    usd_joule = get_usd_joule(timestamp)[state]
+    Mhash_joule = get_Mhash_joule(currency, timestamp)
+    Mhash_second = get_my_hash_rate(currency, timestamp) * 10**6
     if currency == 'BTC':
         seconds = 60 * 10
     if currency == 'ETH':
@@ -261,47 +298,44 @@ def calculate_costs(currency, state='MA'):
     return e_costs
 
 
-def calculate_profit(case, currency):
-    block_reward = get_block_reward(currency)
+def calculate_profit(case, currency, timestamp):
+    block_reward = get_block_reward(currency, timestamp)
     if case == 'w':
-        price = get_price(currency) * (1 + get_largest_pct_loss(currency))
+        price = get_price(currency, timestamp) * (1 + get_largest_pct_loss(currency))
     if case == 'b':
-        price = get_price(currency) * (1 + get_largest_pct_gain(currency))
+        price = get_price(currency, timestamp) * (1 + get_largest_pct_gain(currency))
     if case == 'ag':
-        price = get_price(currency) *  (1 + get_avg_pct_change(currency))
+        price = get_price(currency, timestamp) *  (1 + get_avg_pct_change(currency))
     if case == 'ab':
-        price = get_price(currency)*  (1 - get_avg_pct_change(currency))
+        price = get_price(currency, timestamp) *  (1 - get_avg_pct_change(currency))
     if case == 'na':
-        price = get_price(currency)
+        price = get_price(currency, timestamp)
 
-    fees = get_fees(currency)
-    share_mining = get_share_mining(currency)
+    fees = get_fees(currency, timestamp)
+    share_mining = get_share_mining(currency, timestamp)
     USD = price * (block_reward + fees) * share_mining
 
     return USD
 
 
-def calculate_ev(case, currency, state='MA'):
+def calculate_ev(case, currency, state, timestamp):
     #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
-    costs = calculate_costs(currency, state=state)
-    profit = calculate_profit(case, currency)
+    costs = calculate_costs(currency, state, timestamp)
+    profit = calculate_profit(case, currency, timestamp)
     if currency == 'BTC':
         seconds = 600
     elif currency == 'ETH':
         seconds = 12
-    ev = (profit - costs)/seconds
+    ev = (profit - costs) / seconds
 
     return ev
 
 # store as global
-ethereum_data = get_ethereum_data()
+ethereum_data_now = get_ethereum_data()
 
-#calculate_ev('na', 'ETH', state='MA')
-calculate_ev('na', 'BTC', state='MA')
-
-def what_to_do(case, state):
-    btc_ev = calculate_ev(case, 'BTC', state)
-    ether_ev = calculate_ev(case, 'ETH', state)
+def what_to_do(case, state, timestamp):
+    btc_ev = calculate_ev(case, 'BTC', state, timestamp)
+    ether_ev = calculate_ev(case, 'ETH', state, timestamp)
     decision = max(btc_ev, ether_ev, 0)
     if decision == btc_ev:
         text = "BTC"
@@ -310,7 +344,3 @@ def what_to_do(case, state):
     else:
         text = "NA"
     return([decision, text])
-#
-#what_to_do('na', state = 'MA')
-#what_to_do('na', state = 'OK')
-#what_to_do('b', state = 'OK')
