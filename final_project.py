@@ -296,7 +296,7 @@ def calculate_ev(case, currency, state='MA'):
 # store as global
 ethereum_data = get_ethereum_data()
 
-calculate_ev('na', 'ETH', state='MA')
+#calculate_ev('na', 'ETH', state='MA')
 calculate_ev('na', 'BTC', state='MA')
 
 def what_to_do(case, state):
@@ -310,7 +310,7 @@ def what_to_do(case, state):
     else:
         text = "NA"
     return([decision, text])
-
-what_to_do('na', state = 'MA')
-what_to_do('na', state = 'OK')
-what_to_do('b', state = 'OK')
+#
+#what_to_do('na', state = 'MA')
+#what_to_do('na', state = 'OK')
+#what_to_do('b', state = 'OK')
