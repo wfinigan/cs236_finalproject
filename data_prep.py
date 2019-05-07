@@ -151,3 +151,14 @@ df_elec['state'] = df_elec_raw.state
 df_elec['price'] = df_elec_raw.price
 
 df_elec.to_csv('data/elec_data.csv')
+
+"""# Add blocks yesterday
+"""
+block_count_btc = pd.read_csv('data/helper/btc/block_count.csv')
+block_count_eth = pd.read_csv('data/helper/eth/block_count.csv')
+block_count_btc.to_csv('data/btc/counts.csv')
+
+df_counts_eth = pd.DataFrame()
+df_counts_eth['date'] = block_count_eth['Date(UTC)'].astype('datetime64[ns]')
+df_counts_eth['counts'] = block_count_eth['Value']
+df_counts_eth.to_csv('data/eth/counts.csv')
