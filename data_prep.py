@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from datetime import datetime
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
@@ -136,3 +137,17 @@ df_diff_eth = df_diff_eth[(df_diff_eth.date >= start_time) & (df_diff_eth.date <
 
 df_diff_eth =  df_diff_eth.reset_index(drop=True)
 df_diff_eth.to_csv('data/eth/diff.csv')
+
+"""# Clean up electricity price data
+"""
+df_elec_raw = pd.read_csv('data/helper/elec_price_raw.csv')
+df_elec_raw['day'] = np.ones(len(df_elec_raw))
+df_elec_raw['day'] = df_elec_raw['day'].astype('int')
+df_elec_raw[['year','month', 'day']]
+
+df_elec = pd.DataFrame()
+df_elec['date'] = pd.to_datetime(df_elec_raw[['year','month', 'day']])
+df_elec['state'] = df_elec_raw.state
+df_elec['price'] = df_elec_raw.price
+
+df_elec.to_csv('data/elec_data.csv')
