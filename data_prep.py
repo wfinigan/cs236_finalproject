@@ -121,7 +121,7 @@ df_diff_btc_raw.date = df_diff_btc_raw.date.astype('datetime64[ns]')
 df_diff_btc_raw = df_diff_btc_raw[(df_diff_btc_raw.date >= start_time) & (df_diff_btc_raw.date < end_time)]
 
 df_diff_btc =  df_diff_btc_raw.reset_index(drop=True)
-df_diff_btc.to_csv('data/btc/difficulty.csv')
+df_diff_btc.to_csv('data/btc/diff.csv')
 
 """# Clean up ETH difficulty file.
 """
@@ -135,4 +135,4 @@ df_diff_eth['diff'] = df_diff_eth_raw['Value'] * 10**12
 df_diff_eth = df_diff_eth[(df_diff_eth.date >= start_time) & (df_diff_eth.date < end_time)]
 
 df_diff_eth =  df_diff_eth.reset_index(drop=True)
-df_diff_eth.to_csv('data/eth/difficulty.csv')
+df_diff_eth.to_csv('data/eth/diff.csv')
