@@ -113,3 +113,26 @@ df_ohlc_eth = df_ohlc_eth.reset_index(drop=True)
 
 df_ohlc_btc.to_csv('data/btc/ohlc.csv')
 df_ohlc_eth.to_csv('data/eth/ohlc.csv')
+
+"""# Clean up BTC difficulty file.
+"""
+df_diff_btc_raw = pd.read_csv('data/helper/btc/difficulty_raw.csv', names=['date', 'diff'])
+df_diff_btc_raw.date = df_diff_btc_raw.date.astype('datetime64[ns]')
+df_diff_btc_raw = df_diff_btc_raw[(df_diff_btc_raw.date >= start_time) & (df_diff_btc_raw.date < end_time)]
+
+df_diff_btc =  df_diff_btc_raw.reset_index(drop=True)
+df_diff_btc.to_csv('data/btc/difficulty.csv')
+
+"""# Clean up ETH difficulty file.
+"""
+df_diff_eth_raw = pd.read_csv('data/helper/eth/difficulty_raw.csv')
+
+df_diff_eth = pd.DataFrame()
+df_diff_eth['date'] = df_diff_eth_raw['Date(UTC)'].astype('datetime64[ns]')
+
+# convert to hashes (from terahash)
+df_diff_eth['diff'] = df_diff_eth_raw['Value'] * 10**12
+df_diff_eth = df_diff_eth[(df_diff_eth.date >= start_time) & (df_diff_eth.date < end_time)]
+
+df_diff_eth =  df_diff_eth.reset_index(drop=True)
+df_diff_eth.to_csv('data/eth/difficulty.csv')
