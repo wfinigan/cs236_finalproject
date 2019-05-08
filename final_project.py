@@ -25,8 +25,8 @@ def get_ethereum_data():
     return response_json['data']
 
 
-def get_price(currency, timestamp):
-    if timestamp is None:
+def get_price(currency, timestamp_data):
+    if timestamp_data is None:
         coind_id_map = {
             'BTC': '1',
             'ETH': '2',
@@ -44,10 +44,10 @@ def get_price(currency, timestamp):
 
         return float(response_json['data'][coin_id]['quote']['USD']['price'])
     else:
-        raise ValueError('No historical data for year {}'.format(timestamp.year))
+        return timestamp_data[currency.lower()]['price']
 
 
-def get_block_reward(currency, timestamp):
+def get_block_reward(currency, timestamp_data):
     block_reward_data = {
         'BTC': {
             None: 12.5,
@@ -59,17 +59,14 @@ def get_block_reward(currency, timestamp):
         }
     }
 
-    if timestamp is None:
-        return block_reward_data[currency][timestamp]
+    if timestamp_data is None:
+        return block_reward_data[currency][timestamp_data]
     else:
-        if block_reward_data[currency].get(timestamp.year) is not None:
-            return block_reward_data[currency][timestamp.year]
-        else:
-            raise ValueError('No historical data for year {}'.format(timestamp.year))
+        return block_reward_data[currency][2018]
 
 
-def get_fees(currency, timestamp, days=1):
-    if timestamp is None:
+def get_fees(currency, timestamp_data, days=1):
+    if timestamp_data is None:
         if currency == 'BTC':
             url = 'https://api.smartbit.com.au/v1/blockchain/stats'
             response = requests.get(url, params={'days': days})
@@ -91,76 +88,13 @@ def get_fees(currency, timestamp, days=1):
         else:
             raise ValueError('Currency {} not yet implemented.'.format(currency))
     else:
-        raise ValueError('Historical data not yet implemented.')
-
+        fees = timestamp_data[currency.lower()]['fees'] / timestamp_data[currency.lower()]['counts']
 
     return fees
 
 
-def get_history_df(currency):
-    try:
-        df = pd.read_csv('{}-USD.csv'.format(currency))
-    except IOError:
-        raise ValueError('No history file found for currency {}'.format(currency))
-
-    return df
-
-
-def get_largest_pct_loss(currency):
-    df = get_history_df(currency)
-    df = df[df.shape[0]-365:].copy()
-    df = df.reset_index()
-
-    max_curr = 0
-    old = df.loc[0]['Adj Close'].copy()
-
-    for z in range(1,df.shape[0]):
-        temp = df.loc[z]['Adj Close'].copy()
-        change = (temp - old )/old
-        if change <  max_curr:
-            max_curr = change
-        old = temp
-
-    return max_curr
-
-
-def get_largest_pct_gain(currency):
-    df = get_history_df(currency)
-    df = df[df.shape[0]-365:].copy()
-    df = df.reset_index()
-
-    max_curr = 0
-    old = df.loc[0]['Adj Close'].copy()
-
-    for z in range(1,df.shape[0]):
-        temp = df.loc[z]['Adj Close'].copy()
-        change = (temp - old )/old
-        if change > max_curr:
-            max_curr = change
-        old = temp
-
-    return max_curr
-
-
-def get_avg_pct_change(currency):
-    df = get_history_df(currency)
-    df = df[df.shape[0]-365:].copy()
-    df = df.reset_index()
-
-    mylist = list()
-    old = df.loc[0]['Adj Close'].copy()
-
-    for z in range(1,df.shape[0]):
-        temp = df.loc[z]['Adj Close'].copy()
-        change = (temp - old )/old
-        mylist.append(abs(change))
-        old = temp
-
-    return np.average(np.asarray(mylist))
-
-
-def get_difficulty(currency, timestamp):
-    if timestamp is None:
+def get_difficulty(currency, timestamp_data):
+    if timestamp_data is None:
         if currency == 'BTC':
             url = 'https://api.smartbit.com.au/v1/blockchain/stats'
             response = requests.get(url)
@@ -174,32 +108,32 @@ def get_difficulty(currency, timestamp):
         else:
             raise ValueError('Currency {} not yet implemented.'.format(currency))
     else:
-        raise ValueError('Historical data not yet implemented.')
+        diff = timestamp_data[currency.lower()]['diff']
 
     return diff
 
 
-def get_blocks_yesterday(currency, timestamp):
-    if timestamp is None:
+def get_blocks_yesterday(currency, timestamp_data):
+    if timestamp_data is None:
         if currency == 'BTC':
             url = 'https://api.smartbit.com.au/v1/blockchain/stats'
             response = requests.get(url)
             response_json = response.json()
-        elif currency == 'ETH':
-            raise ValueError('ETH Not yet implemented.')
+
+            return response_json['stats']['block_count']
         else:
             raise ValueError('Currency {} not yet implemented.'.format(currency))
     else:
-        raise ValueError('Historical data not yet implemented.')
-
-    return response_json['stats']['block_count']
+        return timestamp_data[currency.lower()]['counts']
 
 
-def get_updated_hashrate(currency, timestamp):
-    difficulty = get_difficulty(currency, timestamp)
+
+
+def get_updated_hashrate(currency, timestamp_data):
+    difficulty = get_difficulty(currency, timestamp_data)
     if currency == 'BTC':
         expected_blocks = 144
-        blocks_found = get_blocks_yesterday(currency, timestamp)
+        blocks_found = get_blocks_yesterday(currency, timestamp_data)
         #in tera hashes
         updated_hashrate = (blocks_found / expected_blocks * difficulty * 2**32 / 600 ) / 10**12
     elif currency == 'ETH':
@@ -208,36 +142,32 @@ def get_updated_hashrate(currency, timestamp):
     return updated_hashrate
 
 
-def get_my_hash_rate(currency, timestamp):
-    if timestamp is None:
-        if currency == 'BTC':
-        # using antminer (tera hashes)
-            my_hash_rate = 14
+def get_my_hash_rate(currency):
+    """TODO: Change to historical?
+    """
+    if currency == 'BTC':
+    # using antminer (tera hashes)
+        my_hash_rate = 14
 
-        if currency == 'ETH':
-            # 33 MH convert to TeraHashes
-            my_hash_rate = 33 * 10 **-6
-    else:
-        raise ValueError('Historical data not yet implemented.')
+    if currency == 'ETH':
+        # 33 MH convert to TeraHashes
+        my_hash_rate = 33 * 10 **-6
 
     return my_hash_rate
 
 
-def get_Mhash_joule(currency, timestamp):
-    if timestamp is None:
-        if currency == 'BTC':
-            return 10182
+def get_Mhash_joule(currency):
+    if currency == 'BTC':
+        return 10182
 
-        if currency == 'ETH':
-            #MHash per second divided by watts
-            return 33 / 200
-    else:
-        raise ValueError('Historical data not yet implemented.')
+    if currency == 'ETH':
+        #MHash per second divided by watts
+        return 33 / 200
 
-def get_usd_joule(timestamp):
+def get_usd_joule(timestamp_data):
     """Return dictionary mapping State IDs to dollars per joule average price in previous month.
     """
-    if timestamp is None:
+    if timestamp_data is None:
         url = 'http://api.eia.gov/category/'
         params = {
             'api_key': eia_key,
@@ -272,56 +202,127 @@ def get_usd_joule(timestamp):
             cost = response_json['series'][0]['data'][0][1] / (100 * (3.6 * 10**6))
             states[state] = cost
     else:
-        raise ValueError('Historical data not yet implemented.')
+        states = timestamp_data['elec']
+
     return states
 
 
-def get_share_mining(currency, timestamp):
-    hashrate = get_updated_hashrate(currency, timestamp)
-    my_hash_rate = get_my_hash_rate(currency, timestamp)
+def get_history_df(currency):
+    try:
+        df = pd.read_csv('data/{}/ohlc.csv'.format(currency))
+    except IOError:
+        raise ValueError('No history file found for currency {}'.format(currency))
+    return df
+
+
+def get_largest_pct_loss(currency):
+    df = get_history_df(currency)
+    df = df[df.shape[0]-365:].copy()
+    df = df.reset_index()
+
+    max_curr = 0
+    old = df.loc[0]['adj_close'].copy()
+
+    for z in range(1,df.shape[0]):
+        temp = df.loc[z]['adj_close'].copy()
+        change = (temp - old )/old
+        if change <  max_curr:
+            max_curr = change
+        old = temp
+
+    return max_curr
+
+
+def get_largest_pct_gain(currency):
+    df = get_history_df(currency)
+    df = df[df.shape[0]-365:].copy()
+    df = df.reset_index()
+
+    max_curr = 0
+    old = df.loc[0]['adj_close'].copy()
+
+    for z in range(1,df.shape[0]):
+        temp = df.loc[z]['adj_close'].copy()
+        change = (temp - old )/old
+        if change > max_curr:
+            max_curr = change
+        old = temp
+
+    return max_curr
+
+
+def get_avg_pct_change(currency):
+    df = get_history_df(currency)
+    df = df[df.shape[0]-365:].copy()
+    df = df.reset_index()
+
+    mylist = list()
+    old = df.loc[0]['adj_close'].copy()
+
+    for z in range(1,df.shape[0]):
+        temp = df.loc[z]['adj_close'].copy()
+        change = (temp - old )/old
+        mylist.append(abs(change))
+        old = temp
+
+    return np.average(np.asarray(mylist))
+
+
+def get_share_mining(currency, timestamp_data):
+    hashrate = get_updated_hashrate(currency, timestamp_data)
+    my_hash_rate = get_my_hash_rate(currency)
     share_mining = my_hash_rate/ (my_hash_rate + hashrate)
 
     return share_mining
 
 
-def calculate_costs(currency, state, timestamp):
-    usd_joule = get_usd_joule(timestamp)[state]
-    Mhash_joule = get_Mhash_joule(currency, timestamp)
-    Mhash_second = get_my_hash_rate(currency, timestamp) * 10**6
+def calculate_costs(currency, state, timestamp_data):
+    usd_joule = get_usd_joule(timestamp_data)[state]
+    Mhash_joule = get_Mhash_joule(currency)
+    Mhash_second = get_my_hash_rate(currency) * 10**6
     if currency == 'BTC':
         seconds = 60 * 10
     if currency == 'ETH':
     #expected time to mine a block is 12 seconds
         seconds = 12
-    e_costs = usd_joule / Mhash_joule *Mhash_second  * seconds
+    e_costs = usd_joule / Mhash_joule * Mhash_second * seconds
 
     return e_costs
 
 
-def calculate_profit(case, currency, timestamp):
-    block_reward = get_block_reward(currency, timestamp)
-    if case == 'w':
-        price = get_price(currency, timestamp) * (1 + get_largest_pct_loss(currency))
-    if case == 'b':
-        price = get_price(currency, timestamp) * (1 + get_largest_pct_gain(currency))
-    if case == 'ag':
-        price = get_price(currency, timestamp) *  (1 + get_avg_pct_change(currency))
-    if case == 'ab':
-        price = get_price(currency, timestamp) *  (1 - get_avg_pct_change(currency))
-    if case == 'na':
-        price = get_price(currency, timestamp)
+def calculate_profit(case, currency, timestamp_data, data=None):
+    curr = currency.lower()
 
-    fees = get_fees(currency, timestamp)
-    share_mining = get_share_mining(currency, timestamp)
+    if data is None:
+        data = {curr: {}}
+        data[curr]['largest_pct_loss'] = get_largest_pct_loss(curr)
+        data[curr]['largest_pct_gain'] = get_largest_pct_gain(curr)
+        data[curr]['avg_pct_change'] = get_avg_pct_change(curr)
+
+    block_reward = get_block_reward(currency, timestamp_data)
+    if case == 'w':
+        price = get_price(currency, timestamp_data) * (1 + data[curr][largest_pct_loss])
+    if case == 'b':
+        price = get_price(currency, timestamp_data) * (1 + data[curr][largest_pct_gain])
+    if case == 'ag':
+        price = get_price(currency, timestamp_data) *  (1 + data[curr][avg_pct_change])
+    if case == 'ab':
+        price = get_price(currency, timestamp_data) *  (1 - data[curr][avg_pct_change])
+    if case == 'na':
+        price = get_price(currency, timestamp_data)
+
+    fees = get_fees(currency, timestamp_data)
+    share_mining = get_share_mining(currency, timestamp_data)
     USD = price * (block_reward + fees) * share_mining
 
     return USD
 
 
-def calculate_ev(case, currency, state, timestamp):
+def calculate_ev(case, currency, state, timestamp_data, data=None):
     #case can be 'w' for worst, 'g' for good, 'ab' for average bad, 'ab' for average bad ,and 'na'
-    costs = calculate_costs(currency, state, timestamp)
-    profit = calculate_profit(case, currency, timestamp)
+    costs = calculate_costs(currency, state, timestamp_data)
+    profit = calculate_profit(case, currency, timestamp_data, data=data)
+
     if currency == 'BTC':
         seconds = 600
     elif currency == 'ETH':
@@ -333,9 +334,22 @@ def calculate_ev(case, currency, state, timestamp):
 # store as global
 ethereum_data_now = get_ethereum_data()
 
-def what_to_do(case, state, timestamp):
-    btc_ev = calculate_ev(case, 'BTC', state, timestamp)
-    ether_ev = calculate_ev(case, 'ETH', state, timestamp)
+
+def get_ohlc_data():
+    ohlc_data = {'eth': {}, 'btc': {}}
+    for curr in ohlc_data:
+        ohlc_data[curr]['largest_pct_loss'] = get_largest_pct_loss(curr)
+        ohlc_data[curr]['largest_pct_gain'] = get_largest_pct_gain(curr)
+        ohlc_data[curr]['avg_pct_change'] = get_avg_pct_change(curr)
+
+    return ohlc_data
+
+
+def what_to_do(case, state, timestamp_data, data=None):
+    """Get up to date information on what to do given a timestamp_data or timestamp_data=None for now.
+    """
+    btc_ev = calculate_ev(case, 'BTC', state, timestamp_data, data=data)
+    ether_ev = calculate_ev(case, 'ETH', state, timestamp_data, data=data)
     decision = max(btc_ev, ether_ev, 0)
     if decision == btc_ev:
         text = "BTC"
@@ -344,3 +358,54 @@ def what_to_do(case, state, timestamp):
     else:
         text = "NA"
     return([decision, text])
+
+
+def set_dt_index(df):
+    df = df.set_index(pd.DatetimeIndex(df.date))
+    return df.drop(columns=['date'])
+
+
+def run_backtest(method, state):
+
+    ohlc_data = get_ohlc_data()
+    currs = ['eth', 'btc']
+
+    output_dict = {'date': []}
+    data_sets = {}
+    for curr in currs:
+        data_sets[curr] = {}
+        output_dict[curr] = []
+
+    types = ['fees', 'price', 'diff', 'counts']
+
+    elec_data = set_dt_index(pd.read_csv('data/elec_data.csv', index_col=0))
+    data_sets['elec'] = elec_data[elec_data.state == state]
+
+    for curr in currs:
+        for type in types:
+            data_sets[curr][type] = set_dt_index(pd.read_csv('data/{}/{}.csv'.format(curr, type), index_col=0))
+    counter = 0
+    for ts in data_sets['btc']['price'].index:
+        if counter % 10000 == 0:
+            ts_data = {
+                'eth': {},
+                'btc': {},
+            }
+            e_i = data_sets['elec'].index.get_loc(ts, method='nearest')
+            ts_data['elec'] = {state: data_sets['elec'].price[e_i]}
+
+            for curr in currs:
+                for type in types:
+                    index = data_sets[curr][type].index.get_loc(ts, method='nearest')
+                    ts_data[curr][type] = data_sets[curr][type][type][index]
+
+            btc_ev = calculate_ev(method, 'BTC', state, ts_data, data=ohlc_data)
+            eth_ev = calculate_ev(method, 'ETH', state, ts_data, data=ohlc_data)
+
+            output_dict['btc'].append(btc_ev)
+            output_dict['eth'].append(eth_ev)
+            output_dict['date'].append(ts)
+
+        counter +=1
+
+    return pd.DataFrame(output_dict)
