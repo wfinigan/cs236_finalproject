@@ -16,7 +16,7 @@ Obtained from Etherscan (5/4).
 https://etherscan.io/chart/etherprice
 
 ### helper/eth/ohlc_raw.csv
-TODO: Where did WASS get this?
+obtained from: https://finance.yahoo.com/quote/ETH-USD/
 
 ## Bitcoin data
 
@@ -25,16 +25,16 @@ Minute by minute price data based on Coinbase exchange for Bitcoin in 2018.
 Obtained from https://www.kaggle.com/mczielinski/bitcoin-historical-data.
 
 ### `helper/btc/fees_raw.csv`
-TODO: Where did WASS get this?
+Obtained from: https://www.blockchain.com/en/charts/transaction-fees-usd
 
 ### `helper/btc/supply.csv`
-TODO: Where did WASS get this?
+https://www.blockchain.com/en/charts/total-bitcoins
 
 ### `helper/btc/difficulty_raw.csv`
-TODO: Where did WASS get this?
+https://www.blockchain.com/en/charts/difficulty
 
 ### helper/btc/ohlc_raw.csv
-TODO: Where did WASS get this?
+obtained from https://finance.yahoo.com/quote/BTC-USD/
 
 ## Other
 
