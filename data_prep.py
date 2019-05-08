@@ -148,7 +148,7 @@ df_elec_raw[['year','month', 'day']]
 df_elec = pd.DataFrame()
 df_elec['date'] = pd.to_datetime(df_elec_raw[['year','month', 'day']])
 df_elec['state'] = df_elec_raw.state
-df_elec['price'] = df_elec_raw.price
+df_elec['price'] = df_elec_raw.price / (100 * (3.6 * 10**6))
 
 df_elec.to_csv('data/elec_data.csv')
 
